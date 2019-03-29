@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+<script src="js/jquery-1.9.1.js"></script>
+<script src="js/jquery.validate.min.js"></script>
+
+{#$().ready(function){#}
+{#    $('#tianxie').validate({#}
+{#        rules: {#}
+{#            values: {#}
+{#                required: true,#}
+{#                digits: true#}
+{#            },#}
+{#        },#}
+{#        messages: {#}
+{#            values: {#}
+{#                required: '此项必填',#}
+{#                digits: '只能填写数字'#}
+{#            },#}
+{#        }#}
+{#    })#}
+});
+
+{% block title %}Flasky - Generate{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>填写报表内容</h1>
+        <p>可以留空不填写，但必须填写数字格式</p>
+    </div>
+    <form method="post" action="/baobiao/tianxie/" enctype="multipart/form-data" name="tianxie" id="tianxie">
+    <table class="table table-bordered">
+    <tr>
+        <th>报表</th>
+        <th>格子</th>
+        <th>填写内容</th>
+        <th>值</th>
+    </tr>
+        {% for i in sqlresult %}
+            <tr>
+                {{ form.csrf_token }}
+                <td>{{ i[0] }}</td>
+                <td>{{ i[1] }}</td>
+                <td>{{ i[2] }}</td>
+                <td>
+                    <input name="values" value="" type="text">
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    <td><button type="submit">提交</button></td>
+    </form>
+{% endblock %}
+
