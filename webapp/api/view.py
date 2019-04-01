@@ -139,9 +139,9 @@ def download():
         zipf.close()
         return send_file(basedir+'\\'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
 
-
-@_api.route('/split_baobiao/', methods=['GET', 'POST'])
-@login_required
-def split_baobiao():
-    form = SplitForm()
-    return render_template("upload.html", form=form)
+#
+# @_api.route('/split_baobiao/', methods=['GET', 'POST'])
+# @login_required
+# def split_baobiao():
+#     form = SplitForm()
+#     return render_template("upload.html", form=form)
