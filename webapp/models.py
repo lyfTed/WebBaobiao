@@ -49,7 +49,7 @@ class User(UserMixin,  db.Model):
 # 加载用户的回调函数
 @login_manager.user_loader
 def load_user(user_id):
-    print('call load_user')
+    # print('call load_user')
     return User.query.get(int(user_id))
 
 

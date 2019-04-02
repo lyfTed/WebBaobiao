@@ -95,7 +95,7 @@ def baobiao_tianxie():
     cursor.execute(sql)
     sqlresult = cursor.fetchall()
     if request.method == 'GET':
-        print('GET')
+        # print('GET')
         return render_template("baobiao_tianxie.html", form=form, sqlresult=sqlresult)
     elif request.method == 'POST':
         tianxie = request.form.getlist("values")

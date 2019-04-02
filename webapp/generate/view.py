@@ -19,6 +19,7 @@ FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 def generate():
     form = GenerateForm()
     generatelist = request.values.getlist('excels')
+    generatedate = request.values.get('generatedate')
     if generatelist == []:
         return render_template('generate.html', form=form)
     else:
@@ -41,11 +42,13 @@ def generateFile(filetogenerate_chinese):
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
-    userlist = []
-    userset = {}
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
+        print(position)
+        userlist = []
+        userset = {}
+        alertlist = []
         # 获取用户和内容
         content_list = sqlresult[i][1].lstrip('|').split('|')
         for content in content_list:
@@ -61,14 +64,26 @@ def generateFile(filetogenerate_chinese):
                 userlist.append(user)
                 userset[user] = []
             userset[user].append((position, value))
-    for user in userlist:
-        for i in range(len(userset[user])):
-            position = userset[user][i][0]
-            # value = userset[user][i][0]
-            try:
-                sql = 'select content from' + user + \
-                    ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
-                print(sql)
-            finally:
-                pass
-
+        positionvaluelist = []
+        for user in userlist:
+            for i in range(len(userset[user])):
+                position = userset[user][i][0]
+                # value = userset[user][i][0]
+                try:
+                    sql = 'select value from ' + user + \
+                        ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
+                    print(sql)
+                    cursor.execute(sql)
+                    result = cursor.fetchall()
+                    value = result[0][0]
+                    positionvaluelist.append(value)
+                    if value is None:
+                        alertlist.append(user)
+                except:
+                    alertlist.append(user)
+                finally:
+                    pass
+        positionvalue = sum([x if x is not None else 0 for x in positionvaluelist])
+        print(positionvaluelist)
+        print(positionvalue)
+        print(alertlist)

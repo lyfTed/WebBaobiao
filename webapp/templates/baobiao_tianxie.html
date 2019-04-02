@@ -4,23 +4,6 @@
 <script src="js/jquery-1.9.1.js"></script>
 <script src="js/jquery.validate.min.js"></script>
 
-{#$().ready(function){#}
-{#    $('#tianxie').validate({#}
-{#        rules: {#}
-{#            values: {#}
-{#                required: true,#}
-{#                digits: true#}
-{#            },#}
-{#        },#}
-{#        messages: {#}
-{#            values: {#}
-{#                required: '此项必填',#}
-{#                digits: '只能填写数字'#}
-{#            },#}
-{#        }#}
-{#    })#}
-});
-
 {% block title %}Flasky - Generate{% endblock %}
 
 {% block page_content %}
@@ -34,7 +17,8 @@
         <th>报表</th>
         <th>格子</th>
         <th>填写内容</th>
-        <th>值</th>
+        <th>当前值</th>
+        <th>请更新值，留空为不更新</th>
     </tr>
         {% for i in sqlresult %}
             <tr>
@@ -42,6 +26,7 @@
                 <td>{{ i[0] }}</td>
                 <td>{{ i[1] }}</td>
                 <td>{{ i[2] }}</td>
+                <td>{{ i[3] }}</td>
                 <td>
                     <input name="values" value="" type="text">
                 </td>
