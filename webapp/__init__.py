@@ -2,15 +2,20 @@
 # filename: __init.py
 import os
 from flask import Flask
+from flask_admin import Admin, AdminIndexView
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
+from flask_admin.contrib.sqla import ModelView
+from .models import *
+####不对
 from config import config
 import pymysql
 
+flask_admin = Admin()
 bootstrap = Bootstrap()
 db = SQLAlchemy()
 mail = Mail()
@@ -23,6 +28,7 @@ login_manager.login_view = 'user.login'
 excels = UploadSet('Excels', DOCUMENTS)
 conn = pymysql.connect(host='localhost', user='root', passwd='lyfTeddy3.14', db='baobiaodb', use_unicode=True,
                            charset='utf8')
+
 
 def create_app(config_name):
     # __name__ 决定应用根目录
@@ -37,6 +43,10 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
     configure_uploads(app, excels)
+    flask_admin.init_app(app)
+    ### admin配置待补充
+    ####不对
+    flask_admin.add_view(ModelView(User, db.session))
 
     # 注册蓝本
     from .main import _main as main_blueprint
