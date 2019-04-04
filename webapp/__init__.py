@@ -10,12 +10,12 @@ from flask_mail import Mail
 from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
 from flask_admin.contrib.sqla import ModelView
-from .models import *
-####不对
+
+# from .models import *
 from config import config
 import pymysql
 
-flask_admin = Admin()
+admin = Admin(name="管理员页面", url="/admin", index_view=AdminIndexView(name='Admin后台管理', template="myadmin.html"))
 bootstrap = Bootstrap()
 db = SQLAlchemy()
 mail = Mail()
@@ -43,16 +43,15 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
     configure_uploads(app, excels)
-    flask_admin.init_app(app)
+    admin.init_app(app)
     ### admin配置待补充
-    ####不对
-    flask_admin.add_view(ModelView(User, db.session))
+    # flask_admin.add_view(ModelView(User, db.session))
 
     # 注册蓝本
     from .main import _main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
-    from .admin import _admin as admin_blueprint
-    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+    # from .admin import _admin as admin_blueprint
+    # app.register_blueprint(admin_blueprint, url_prefix='/admin')
     from .user import _user as user_blueprint
     app.register_blueprint(user_blueprint, url_prefix='/user')
     from .api import _api as api_blueprint
