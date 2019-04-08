@@ -26,8 +26,9 @@ def generate():
         filedir = os.path.join(basedir, 'upload')
         # print(filedir)
         # print(basedir)
-        for generate in generatelist:
-            filetogenerate_chinese = FILE_TO_DOWNLOAD[generate]
+        for generatefile in generatelist:
+            print(generatefile)
+            filetogenerate_chinese = FILE_TO_DOWNLOAD[generatefile]
             # call the function to generate filetogenerate
             print(filetogenerate_chinese)
             generateFile(filetogenerate_chinese)

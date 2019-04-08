@@ -131,6 +131,8 @@ def download():
         filedir = os.path.join(basedir, 'upload')
         print(filedir)
         print(basedir)
+        if os.path.exists(basedir+'/Baobiao.zip'):
+            os.remove(basedir+'/Baobiao.zip')
         zipf = zipfile.ZipFile(basedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
         for filetodownload in downloadlist:
             filename = FILE_TO_DOWNLOAD[filetodownload] + '.xlsx'
