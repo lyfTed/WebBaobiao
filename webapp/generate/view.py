@@ -26,19 +26,24 @@ def generate():
         filedir = os.path.join(basedir, 'upload')
         # print(filedir)
         # print(basedir)
+        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
         for generatefile in generatelist:
-            print(generatefile)
             filetogenerate_chinese = FILE_TO_DOWNLOAD[generatefile]
             # call the function to generate filetogenerate
-            print(filetogenerate_chinese)
-            generateFile(filetogenerate_chinese)
+            print(generatedate)
+            generateFile(filetogenerate_chinese, generatedate)
         return render_template('generate.html', form=form)
 
 
-def generateFile(filetogenerate_chinese):
+def generateFile(filetogenerate_chinese, generatedate):
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
+    # 创建新表
+    sql = 'create table if not exists ' + filetogenerate + '_' + generatedate + \
+          ' select * from ' + filetogenerate + ';'
+    cursor.execute(sql)
+    # 从模板拿需要填写的格子
     sql = 'select distinct position, content from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
@@ -85,6 +90,9 @@ def generateFile(filetogenerate_chinese):
                 finally:
                     pass
         positionvalue = sum([x if x is not None else 0 for x in positionvaluelist])
-        print(positionvaluelist)
-        print(positionvalue)
         print(alertlist)
+        sql = 'update ' + filetogenerate + '_' + generatedate + ' set content=' + '"' + str(positionvalue) + \
+              '" where position=' + '"' + position +'";'
+        print(sql)
+
+
