@@ -4,8 +4,7 @@ from . import _generate
 from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
 from flask_login import login_required, current_user
 import os
-import xlrd
-import xlwt
+import xlrd, xlwt
 from xlutils.copy import copy
 from .form import GenerateForm, excels
 from .. import conn
@@ -112,12 +111,11 @@ def generateFile(filetogenerate_chinese, generatedate):
     ######################
     # 生成excel
     # 计算行数列数
-    wb = xlrd.open_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    wb = xlrd.open_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xls',
+                            formatting_info=True)
     wbnew = copy(wb)
     sh = wbnew.get_sheet(0)
-    # book = xlwt.Workbook(encoding='utf-8')
-    # sheet1 = book.add_sheet('Sheet1')
-    sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ';'
+    sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
@@ -128,7 +126,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     for i in range(len(positionlist)):
         row = int(positionlist[i][1:]) - 1
         col = ord(positionlist[i][0]) - ord('A')
-        sh.write(row, col, contentlist[i])
+        sh.write(row, col, float(contentlist[i]))
     filedir = os.path.join(basedir, filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
