@@ -81,14 +81,11 @@ def importintodb(file_to_generate, filename):
     conn.ping(reconnect=True)
     wb = xlrd.open_workbook(file_to_generate)
     sh = wb.sheet_by_index(0)
-    dfun = []
     nrows = sh.nrows  # 行数
     ncols = sh.ncols  # 列数
     title = sh.cell_value(0, 0)
     cols = [chr(i + ord('A')) for i in range(ncols)]
     rows = [str(i + 1) for i in range(nrows)]
-    for i in range(1, nrows):
-        dfun.append(sh.row_values(i))
 
     wb2 = load_workbook(file_to_generate)
     sheet_names = wb2.get_sheet_names()
