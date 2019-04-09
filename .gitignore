@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-
-*.pyc
-*.xml
-.idea/workspace.xml
-=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -60,4 +54,3 @@ venv.bak/
 .idea/**/dynamic.xml
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
->>>>>>> a7132077ae2a263890c8eeeeec5ec82a0772d5b3
