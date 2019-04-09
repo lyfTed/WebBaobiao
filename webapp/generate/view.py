@@ -127,7 +127,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     for i in range(len(positionlist)):
         row = int(positionlist[i][1:]) - 1
         col = ord(positionlist[i][0]) - ord('A')
-        sh.write(row, col, float(contentlist[i]))
+        sh.write(row, col, contentlist[i])
 
     filedir = os.path.join(basedir, filetogenerate_chinese)
     if not os.path.exists(filedir):
