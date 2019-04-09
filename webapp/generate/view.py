@@ -100,14 +100,6 @@ def generateFile(filetogenerate_chinese, generatedate):
         print(sql)
         cursor.execute(sql)
     conn.commit()
-
-    # 把带公式计算的格子自动计算
-    # sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
-    # cursor.execute(sql)
-    # conn.commit()
-    # sqlresult = cursor.fetchall()
-    # print(sqlresult)
-
     ######################
     # 生成excel
     # 计算行数列数
@@ -121,12 +113,22 @@ def generateFile(filetogenerate_chinese, generatedate):
     sqlresult = cursor.fetchall()
     positionlist = [x[0] for x in sqlresult]
     contentlist = [x[1] for x in sqlresult]
-    # row = list(set([x[1:] for x in positionlist]))
-    # column = list(set(x[0] for x in positionlist))
     for i in range(len(positionlist)):
         row = int(positionlist[i][1:]) - 1
         col = ord(positionlist[i][0]) - ord('A')
         sh.write(row, col, float(contentlist[i]))
+    # 把带公式计算的格子自动计算
+    sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult = cursor.fetchall()
+    positionlist = [x[0] for x in sqlresult]
+    contentlist = [x[1] for x in sqlresult]
+    for i in range(len(positionlist)):
+        row = int(positionlist[i][1:]) - 1
+        col = ord(positionlist[i][0]) - ord('A')
+        sh.write(row, col, float(contentlist[i]))
+
     filedir = os.path.join(basedir, filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
