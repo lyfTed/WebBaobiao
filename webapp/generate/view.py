@@ -6,11 +6,16 @@ from flask_login import login_required, current_user
 import os
 import xlrd
 import xlwt
+from xlutils.copy import copy
 from .form import GenerateForm, excels
 from .. import conn
 from pypinyin import lazy_pinyin
 
+pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+# print(pardir)
 basedir = os.path.abspath(os.path.dirname(__file__))
+# print(basedir)
+
 FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
 
@@ -103,11 +108,15 @@ def generateFile(filetogenerate_chinese, generatedate):
     # conn.commit()
     # sqlresult = cursor.fetchall()
     # print(sqlresult)
+
     ######################
     # 生成excel
     # 计算行数列数
-    book = xlwt.Workbook(encoding='utf-8')
-    sheet1 = book.add_sheet('Sheet1')
+    wb = xlrd.open_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    wbnew = copy(wb)
+    sh = wbnew.get_sheet(0)
+    # book = xlwt.Workbook(encoding='utf-8')
+    # sheet1 = book.add_sheet('Sheet1')
     sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ';'
     cursor.execute(sql)
     conn.commit()
@@ -119,8 +128,8 @@ def generateFile(filetogenerate_chinese, generatedate):
     for i in range(len(positionlist)):
         row = int(positionlist[i][1:]) - 1
         col = ord(positionlist[i][0]) - ord('A')
-        sheet1.write(row, col, contentlist[i])
+        sh.write(row, col, contentlist[i])
     filedir = os.path.join(basedir, filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
-    book.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xls')
+    wbnew.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xls')
