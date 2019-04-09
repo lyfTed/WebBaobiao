@@ -91,12 +91,16 @@ def baobiao_tianxie():
     username = current_user.username.lower()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
-    sql = 'select distinct * from ' + username + ';'
-    cursor.execute(sql)
-    sqlresult = cursor.fetchall()
-    if request.method == 'GET':
-        # print('GET')
+    try:
+        sql = 'select distinct * from ' + username + ';'
+        cursor.execute(sql)
+        sqlresult = cursor.fetchall()
+    except:
+        sqlresult = None
+    if request.method == 'GET' and sqlresult is not None:
         return render_template("baobiao_tianxie.html", form=form, sqlresult=sqlresult)
+    elif request.method == 'GET' and sqlresult is None:
+        return render_template("baobiao_tianxie.html", form=form)
     elif request.method == 'POST':
         tianxie = request.form.getlist("values")
         try:

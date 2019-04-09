@@ -66,13 +66,14 @@ def upload_file():
         for file in files:
             if file and allowed_file(file.filename):
                 rawfilename = re.split('[_.]', file.filename)
-                filename = rawfilename[0] + '_' + username + '.' + rawfilename[-1]
-                # filename = secure_filename(''.join(lazy_pinyin(file.filename)))
+                filename = rawfilename[0] + '.' + rawfilename[-1]
+                # 文件名加上用户名（不启用）
+                # filename = rawfilename[0] + '_' + username + '.' + rawfilename[-1]
                 filedir = os.path.join(basedir, 'upload', rawfilename[0])
                 if not os.path.exists(filedir):
                     os.mkdir(filedir)
                 file.save(os.path.join(filedir, filename))
-                importintodb(os.path.join(filedir, filename), filename.split('_')[0])
+                importintodb(os.path.join(filedir, filename), re.split('[_.]', filename)[0])
         flash('File(s) successfully uploaded')
         return redirect('/api/upload')
 
