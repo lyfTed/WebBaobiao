@@ -9,13 +9,11 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
-from flask_admin.contrib.sqla import ModelView
+from webapp.admin.view import flask_admin, MyAdminView, MyView
 
-# from .models import *
 from config import config
 import pymysql
 
-admin = Admin(name="管理员页面", url="/admin", index_view=AdminIndexView(name='Admin后台管理', template="myadmin.html"))
 bootstrap = Bootstrap()
 db = SQLAlchemy()
 mail = Mail()
@@ -29,6 +27,7 @@ excels = UploadSet('Excels', DOCUMENTS)
 conn = pymysql.connect(host='localhost', user='root', passwd='lyfTeddy3.14', db='baobiaodb', use_unicode=True,
                            charset='utf8')
 
+from webapp.models import db, User
 
 def create_app(config_name):
     # __name__ 决定应用根目录
@@ -43,15 +42,17 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
     configure_uploads(app, excels)
-    admin.init_app(app)
-    ### admin配置待补充
-    # flask_admin.add_view(ModelView(User, db.session))
+    flask_admin.init_app(app)
+    flask_admin.add_view(MyAdminView(name='Hello'))
+    ########################
+    flask_admin.add_view(MyView(User, db.session))
+
 
     # 注册蓝本
     from .main import _main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
-    # from .admin import _admin as admin_blueprint
-    # app.register_blueprint(admin_blueprint, url_prefix='/admin')
+    from .admin import _admin as admin_blueprint
+    app.register_blueprint(admin_blueprint, url_prefix='/admin')
     from .user import _user as user_blueprint
     app.register_blueprint(user_blueprint, url_prefix='/user')
     from .api import _api as api_blueprint
