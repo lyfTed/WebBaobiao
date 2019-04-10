@@ -6,14 +6,13 @@ from flask_login import login_required, current_user
 import os
 import xlrd, xlwt
 from xlutils.copy import copy
+from openpyxl import Workbook, load_workbook
 from .form import GenerateForm, excels
 from .. import conn
 from pypinyin import lazy_pinyin
 
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-# print(pardir)
 basedir = os.path.abspath(os.path.dirname(__file__))
-# print(basedir)
 
 FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
@@ -103,33 +102,23 @@ def generateFile(filetogenerate_chinese, generatedate):
     ######################
     # 生成excel
     # 计算行数列数
-    wb = xlrd.open_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xls',
-                            formatting_info=True)
-    wbnew = copy(wb)
-    sh = wbnew.get_sheet(0)
+    wb = load_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    sh = wb.active
     sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
-    positionlist = [x[0] for x in sqlresult]
-    contentlist = [x[1] for x in sqlresult]
-    for i in range(len(positionlist)):
-        row = int(positionlist[i][1:]) - 1
-        col = ord(positionlist[i][0]) - ord('A')
-        sh.write(row, col, float(contentlist[i]))
-    # 把带公式计算的格子自动计算
+    for x in sqlresult:
+        sh[x[0]] = float(x[1])
+    # 把带公式计算的格子填入公式，自动计算
     sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
-    positionlist = [x[0] for x in sqlresult]
-    contentlist = [x[1] for x in sqlresult]
-    for i in range(len(positionlist)):
-        row = int(positionlist[i][1:]) - 1
-        col = ord(positionlist[i][0]) - ord('A')
-        sh.write(row, col, contentlist[i])
-
+    for x in sqlresult:
+        print(x[1])
+        sh[x[0]] = str(x[1])
     filedir = os.path.join(basedir, filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
-    wbnew.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xls')
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')

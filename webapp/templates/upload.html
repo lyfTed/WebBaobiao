@@ -5,7 +5,7 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>Upload上传文件模板</h1>
+    <h1>Upload Excel(s) Templates</h1>
 </div>
 <h2>Select file(s) to upload</h2>
 <p>
@@ -20,10 +20,11 @@
 	{% endwith %}
 </p>
 <p>
-    请统一命名文件如下：资金期限表、G25...（若文件名末有备注姓名，请用“_”分割。支持一次上传多个文件。）
+    请统一命名文件如下：资金期限表、G25...仅支持xlsx文件（若文件名末有备注姓名，请用“_”分割。支持一次上传多个文件。）
 </p>
 <p>
-    请把需要填写的格子在excel中填入该格子涉及人员，以|开始，并用|分割（例：|陆轶凡|朱张婷）。
+    请把需要填写的格子在excel中填入该格子涉及人员及填写提示，以|开始，并用|及：分割
+    （例：|朱张婷：主权国家发行的风险权重为零的证券|陆轶凡：现金）。
 </p>
 <form method="post" action="/api/upload_file/" enctype="multipart/form-data">
     <dl>

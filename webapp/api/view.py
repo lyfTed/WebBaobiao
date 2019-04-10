@@ -15,8 +15,9 @@ from .. import conn
 import pandas as pd
 from openpyxl import load_workbook
 
+pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 basedir = os.path.abspath(os.path.dirname(__file__))
-ALLOWED_EXTENSIONS = set(['txt', 'png', 'jpg', 'xls', 'JPG', 'PNG', 'xlsx', 'gif', 'GIF'])
+ALLOWED_EXTENSIONS = set(['xlsx'])
 FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
 
@@ -94,8 +95,6 @@ def importintodb(file_to_generate, filename):
     sheet_ranges = wb2[name]
     df = pd.DataFrame(sheet_ranges.values)
     df = df.fillna("")
-    # conn = pymysql.connect(host='localhost', user='root', passwd='lyfTeddy3.14', db='baobiaodb', use_unicode=True,
-    #                        charset='utf8')
     cursor = conn.cursor()
     # 创建table
     # 用第一行第一列做表明
@@ -126,22 +125,21 @@ def download():
     if downloadlist == []:
         return render_template('download.html', form=form)
     else:
-        filedir = os.path.join(basedir, 'upload')
-        print(filedir)
-        print(basedir)
-        if os.path.exists(basedir+'/Baobiao.zip'):
-            os.remove(basedir+'/Baobiao.zip')
-        zipf = zipfile.ZipFile(basedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
+        generatedate = request.values.get('generatedate')
+        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        filedir = os.path.join(pardir, 'generate')
+        if os.path.exists(filedir+'/Baobiao.zip'):
+            os.remove(filedir+'/Baobiao.zip')
+        zipf = zipfile.ZipFile(filedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
         for filetodownload in downloadlist:
-            filename = FILE_TO_DOWNLOAD[filetodownload] + '.xlsx'
-            if os.path.isfile(os.path.join(filedir, filename)):
-                zipf.write(filedir + '/generated/' + filename, filename)
+            filefolder = FILE_TO_DOWNLOAD[filetodownload]
+            filename = filefolder + '_' + generatedate + '.xlsx'
+            print(filefolder)
+            print(filename)
+            if os.path.isfile(os.path.join(filedir, filefolder, filename)):
+                print(12345)
+                zipf.write(filedir + '/' + filefolder + '/' + filename, filename)
         zipf.close()
-        return send_file(basedir+'\\'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
+        return send_file(filedir+'\\'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
 
-#
-# @_api.route('/split_baobiao/', methods=['GET', 'POST'])
-# @login_required
-# def split_baobiao():
-#     form = SplitForm()
-#     return render_template("upload.html", form=form)
+
