@@ -26,14 +26,12 @@ def generate():
     if generatelist == []:
         return render_template('generate.html', form=form)
     else:
-        filedir = os.path.join(basedir, 'upload')
+        filedir = os.path.join(pardir, 'static', 'upload')
         # print(filedir)
         # print(basedir)
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_DOWNLOAD[generatefile]
-            # call the function to generate filetogenerate
-            print(generatedate)
             generateFile(filetogenerate_chinese, generatedate)
         return render_template('generate.html', form=form)
 
@@ -77,7 +75,7 @@ def generateFile(filetogenerate_chinese, generatedate):
         for user in userlist:
             for i in range(len(userset[user])):
                 position = userset[user][i][0]
-                # value = userset[user][i][0]
+                # value = userset[auth][i][0]
                 try:
                     sql = 'select value from ' + user + \
                         ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
@@ -102,7 +100,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     ######################
     # 生成excel
     # 计算行数列数
-    wb = load_workbook(pardir + '/api/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    wb = load_workbook(pardir + '/static/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
     sh = wb.active
     sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
     cursor.execute(sql)
@@ -118,7 +116,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     for x in sqlresult:
         print(x[1])
         sh[x[0]] = str(x[1])
-    filedir = os.path.join(basedir, filetogenerate_chinese)
+    filedir = os.path.join(pardir, 'static', 'Generate', filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')

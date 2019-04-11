@@ -1608,7 +1608,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
     thisCache = cache[ id ];
 
     // jQuery data() is stored in a separate object inside the object's internal data
-    // cache in order to avoid key collisions between internal data and user-defined
+    // cache in order to avoid key collisions between internal data and auth-defined
     // data.
     if ( !pvt ) {
         if ( !thisCache.data ) {
@@ -3462,7 +3462,7 @@ if ( !jQuery.support.submitBubbles ) {
         },
 
         postDispatch: function( event ) {
-            // If form was submitted by the user, bubble the event up the tree
+            // If form was submitted by the auth, bubble the event up the tree
             if ( event._submit_bubble ) {
                 delete event._submit_bubble;
                 if ( this.parentNode && !event.isTrigger ) {
@@ -4539,7 +4539,7 @@ getText = Sizzle.getText = function( elem ) {
 
 Expr = Sizzle.selectors = {
 
-    // Can be adjusted by the user
+    // Can be adjusted by the auth
     cacheLength: 50,
 
     createPseudo: markFunction,
@@ -4775,7 +4775,7 @@ Expr = Sizzle.selectors = {
                 fn = Expr.pseudos[ pseudo ] || Expr.setFilters[ pseudo.toLowerCase() ] ||
                     Sizzle.error( "unsupported pseudo: " + pseudo );
 
-            // The user may use createPseudo to indicate that
+            // The auth may use createPseudo to indicate that
             // arguments are needed to create the filter function
             // just as Sizzle does
             if ( fn[ expando ] ) {

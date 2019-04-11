@@ -26,22 +26,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# # 上传文件
-### 运用wtf quick form，处理不了多文件上传。
-# @_api.route('/upload/', methods=['Get', 'POST'], strict_slashes=False)
-# @login_required
-# def upload():
-#     form = UploadForm()
-#     if form.validate_on_submit():
-#         # filename = excels.save(request.files.get('excels'))
-#         # print(filename)
-#         filename = secure_filename(form.excels.data.filename)
-#         excels.save(form.excels.data, name=form.excels.data.filename)
-#     else:
-#         filename = None
-#     return render_template('upload.html', form=form, filename=filename)
-
-
 @_api.route('/upload/')
 @login_required
 def upload():
@@ -52,7 +36,7 @@ def upload():
 @login_required
 def upload_file():
     if request.method == 'POST':
-        # get current user
+        # get current auth
         username = current_user.username
         # print(username)
         # check if the post request has the file part
@@ -70,7 +54,7 @@ def upload_file():
                 filename = rawfilename[0] + '.' + rawfilename[-1]
                 # 文件名加上用户名（不启用）
                 # filename = rawfilename[0] + '_' + username + '.' + rawfilename[-1]
-                filedir = os.path.join(basedir, 'upload', rawfilename[0])
+                filedir = os.path.join(pardir, 'static', 'upload', rawfilename[0])
                 if not os.path.exists(filedir):
                     os.mkdir(filedir)
                 file.save(os.path.join(filedir, filename))
@@ -127,17 +111,14 @@ def download():
     else:
         generatedate = request.values.get('generatedate')
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
-        filedir = os.path.join(pardir, 'generate')
+        filedir = os.path.join(pardir, 'static', 'Generate')
         if os.path.exists(filedir+'/Baobiao.zip'):
             os.remove(filedir+'/Baobiao.zip')
         zipf = zipfile.ZipFile(filedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
         for filetodownload in downloadlist:
             filefolder = FILE_TO_DOWNLOAD[filetodownload]
             filename = filefolder + '_' + generatedate + '.xlsx'
-            print(filefolder)
-            print(filename)
             if os.path.isfile(os.path.join(filedir, filefolder, filename)):
-                print(12345)
                 zipf.write(filedir + '/' + filefolder + '/' + filename, filename)
         zipf.close()
         return send_file(filedir+'\\'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)

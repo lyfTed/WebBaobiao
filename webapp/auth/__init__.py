@@ -2,6 +2,6 @@
 # filename: __init__.py
 from flask import Blueprint
 
-_user = Blueprint('user', __name__)
+_auth = Blueprint('auth', __name__)
 
 from . import view

@@ -21,7 +21,6 @@ class User(UserMixin,  db.Model):
     id = db.Column(db.String(6), primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
-    # role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     dept = db.Column(db.String(64))
     password_hash = db.Column(db.String(128))
 
@@ -48,7 +47,7 @@ class User(UserMixin,  db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     # print('call load_user')
-    return User.query.get(int(user_id))
+    return User.query.get(user_id)
 
 
 class Report(db.Model):

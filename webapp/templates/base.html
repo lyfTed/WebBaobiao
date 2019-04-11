@@ -43,9 +43,9 @@
             ###判断条件中的变量current_user由Flask-Login定义，且在视图函数和模板中自动调用。
             <ul class="nav navbar-nav navbar-right">
                 {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('user.logout') }}">登出</a></li>
+                <li><a href="{{ url_for('auth.logout') }}">登出</a></li>
                 {% else %}
-                <li><a href="{{ url_for('user.login') }}">登录</a></li>
+                <li><a href="{{ url_for('auth.login') }}">登录</a></li>
                 {% endif %}
             </ul>
             ########################################
