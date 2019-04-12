@@ -10,7 +10,7 @@ import zipfile
 import xlrd
 import pymysql
 from pypinyin import lazy_pinyin
-from .form import UploadForm, excels, DownloadForm, SplitForm
+from .form import UploadForm, excels, DownloadForm
 from .. import conn
 import pandas as pd
 from openpyxl import load_workbook

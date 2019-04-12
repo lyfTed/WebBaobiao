@@ -8,7 +8,7 @@ from .. import excels
 
 
 class BaobiaoForm(FlaskForm):
-    excel = SelectMultipleField('Excel to Set', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
+    excel = SelectMultipleField('拆分报表（多选）', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
                                  validators=[DataRequired()], coerce=int)
     submit = SubmitField(u'拆分')
 

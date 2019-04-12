@@ -3,6 +3,7 @@ from . import _admin
 from flask_admin import Admin, AdminIndexView, BaseView, expose
 from flask_login import current_user
 from flask_admin.contrib.sqla import ModelView
+from flask import url_for
 
 # 定制一个页面，用自己的模板（仅仅是页面）然后再程序中加入代码 admin.add_view(MyNews(name=u'发表新闻'))
 class MyAdminView(BaseView):
@@ -16,8 +17,19 @@ class MyAdminView(BaseView):
         return self.render('myadmin.html')
 
 
+class MyBaseView(BaseView):
+    def is_accessible(self):
+        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+            return True
+        return False
+
+    @expose('/', methods=['GET', 'POST'])
+    def index(self):
+        return self.render('index.html')
+
+
 # 管理数据库表，设置表显示哪些字段
-class MyView(ModelView):
+class MyDBView(ModelView):
     def is_accessible(self):
         if current_user.is_authenticated and current_user.username.lower() == 'admin':
             return True
@@ -32,7 +44,7 @@ class MyView(ModelView):
 
     def __init__(self, table, session, **kwargs):
         # You can pass name and other parameters if you want to
-        super(MyView, self).__init__(table, session, **kwargs)
+        super(MyDBView, self).__init__(table, session, **kwargs)
 
 
 

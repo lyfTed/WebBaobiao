@@ -9,7 +9,7 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
-from webapp.admin.view import MyAdminView, MyView
+from webapp.admin.view import MyAdminView, MyDBView, MyBaseView
 from flask_admin.contrib.fileadmin import FileAdmin
 
 from config import config
@@ -18,7 +18,7 @@ import pymysql
 staticfilepath = os.path.join(os.path.dirname(__file__), 'static')
 bootstrap = Bootstrap()
 db = SQLAlchemy()
-flask_admin = Admin(name="后台管理")
+flask_admin = Admin(index_view=AdminIndexView(name="后台管理", template='myadmin.html', url='/admin'))
 mail = Mail()
 moment = Moment()
 login_manager = LoginManager()
@@ -47,9 +47,9 @@ def create_app(config_name):
     login_manager.init_app(app)
     configure_uploads(app, excels)
     flask_admin.init_app(app)
-    flask_admin.add_view(MyAdminView(name='后台管理'))
-    flask_admin.add_view(MyView(User, db.session))
-    flask_admin.add_view(FileAdmin(staticfilepath, name='Files'))
+    flask_admin.add_view(MyBaseView(name='报表主页面', endpoint='index'))
+    flask_admin.add_view(MyDBView(User, db.session, name='用户管理'))
+    flask_admin.add_view(FileAdmin(staticfilepath, name='模板与生成文件管理'))
 
 
     # 注册蓝本

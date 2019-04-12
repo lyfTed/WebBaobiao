@@ -8,7 +8,7 @@ from .. import excels
 
 
 class GenerateForm(FlaskForm):
-    excels = SelectMultipleField('File(s) to Generate', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
+    excels = SelectMultipleField('生成报表（可多选）', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
                                  validators=[DataRequired()], coerce=int)
-    generatedate = DateField(u'生成日期', validators=[DataRequired()], format='%Y-%m-%d')
-    submit = SubmitField('Generate')
+    generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
+    submit = SubmitField('生成')

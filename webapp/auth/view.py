@@ -23,7 +23,7 @@ def login():
             login_user(user, form.remember_me.data)
             ###login_user函数的参数是要登录的用户，以及可选的‘记住我’布尔值。
             if current_user.is_authenticated and current_user.username.lower() == 'admin':
-                return redirect(url_for('admin.index'))
+                return redirect(url_for('main.index'))
             return redirect(request.args.get('next') or url_for('main.index'))
             ###用户访问未授权的ＵＲＬ时会显示登录表单，Flask-Login会把原地址保存在查询字符串的next参数中，这个参数可从request.args字典中读取。如果查询字符串中没有next参数，则重定向到首页。
         flash('Invalid username or password.')
