@@ -122,3 +122,9 @@ def baobiao_tianxie():
             return redirect('/baobiao/tianxie/')
         finally:
             return redirect('/baobiao/tianxie/')
+
+
+@_baobiao.route('/query/', methods=['GET', 'POST'])
+@login_required
+def baobiao_query():
+    return render_template("baobiao_query.html")

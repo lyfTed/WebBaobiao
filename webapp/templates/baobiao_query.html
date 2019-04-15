@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+<script src="jquery/dist/jquery.js"></script>
+
+
+<script src="handsontable/dist/handsontable.full.js"></script>
+<link href="handsontable/dist/handsontable.full.css" rel="stylesheet" media="screen">
+
+{% block title %}Flasky - Generate{% endblock %}
+{% block page_content %}
+    <div id="example"></div>
+    <script>
+      var data = [//四行五列
+        ["", "Kia", "Nissan", "Toyota", "Honda"],
+        ["2008", 10, 11, 12, 13],
+        ["2009", 20, 11, 14, 13],
+        ["2010", 30, 15, 12, 13]
+      ];
+      $("#example").handsontable({
+        data: data,//初始化时候的数据
+        minSpareRows:5,//空出多少行
+        colHeaders:true,//显示表头　
+        contextMenu:true//显示表头下拉菜单
+      })
+    </script>
+{% endblock %}
+
+{#{% block page_content %}#}
+{#    <div class="page-header">#}
+{#        <h1>填写报表内容</h1>#}
+{#        <p>可以留空不填写，但必须填写数字格式</p>#}
+{#    </div>#}
+{#    <form method="post" action="/baobiao/tianxie/" enctype="multipart/form-data" name="tianxie" id="tianxie">#}
+{#    <table class="table table-bordered">#}
+{#    <tr>#}
+{#        <th>报表</th>#}
+{#        <th>格子</th>#}
+{#        <th>填写内容</th>#}
+{#        <th>当前值</th>#}
+{#        <th>请更新值，留空为不更新</th>#}
+{#    </tr>#}
+{#        {% for i in sqlresult %}#}
+{#            <tr>#}
+{#                {{ form.csrf_token }}#}
+{#                <td>{{ i[0] }}</td>#}
+{#                <td>{{ i[1] }}</td>#}
+{#                <td>{{ i[2] }}</td>#}
+{#                <td>{{ i[3] }}</td>#}
+{#                <td>#}
+{#                    <input name="values" value="" type="text">#}
+{#                </td>#}
+{#            </tr>#}
+{#        {% endfor %}#}
+{#    </table>#}
+{#    <td><button type="submit">提交</button></td>#}
+{#    </form>#}
+{#{% endblock %}#}
+
+
