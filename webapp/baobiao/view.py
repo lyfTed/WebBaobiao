@@ -127,4 +127,5 @@ def baobiao_tianxie():
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def baobiao_query():
-    return render_template("baobiao_query.html")
+    # return render_template("baobiao_query.html")
+    return render_template("test.html")

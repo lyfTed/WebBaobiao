@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="handsontable/dist/handsontable.full.js"></script>
+    <link href="handsontable/dist/handsontable.full.css" rel="stylesheet" type="text/css" media="screen">
+</head>
+
+<body>
+    <div id="example"></div>
+    <script>
+        window.onload=function (ev) {
+            var data = [
+                ["", "Ford", "Tesla", "Toyota", "Honda"],
+                ["2017", 10, 11, 12, 13],
+                ["2018", 20, 11, 14, 15],
+                ["2019", 30, 15, 12, 13]
+            ];
+            var container = document.getElementById('example');
+            var hot = new Handsontable(container, {
+                data: data,
+                rowHeaders: true,
+                colHeaders: true,
+                filters: true,
+                dropdownMenu: true
+            });
+        }
+    </script>
+
+</body>
+</html>
