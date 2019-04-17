@@ -44,6 +44,14 @@ def generateFile(filetogenerate_chinese, generatedate):
     sql = 'create table if not exists ' + filetogenerate + '_' + generatedate + \
           ' select * from ' + filetogenerate + ';'
     cursor.execute(sql)
+    # 新增一列解释
+    sql = 'alter table ' + filetogenerate + '_' + generatedate + \
+          ' add contentexplain VARCHAR(500);'
+    print(sql)
+    cursor.execute(sql)
+    sql = 'update ' + filetogenerate + '_' + generatedate + \
+          ' set contentexplain=content;'
+    cursor.execute(sql)
     # 从模板拿需要填写的格子
     sql = 'select distinct position, content from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)

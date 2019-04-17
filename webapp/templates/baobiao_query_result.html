@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{#<script src="js/jquery-1.9.1.js"></script>#}
+{#<script src="js/jquery.validate.min.js"></script>#}
+
+{% block title %}Flasky - Generate{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>与上期报表比较</h1>
+    </div>
+{#    <form method="post" action="/baobiao/query/" enctype="multipart/form-data" name="query" id="query">#}
+{#    <table class="table table-bordered">#}
+{#    <tr>#}
+{#        <th>报表</th>#}
+{#        <th>格子</th>#}
+{#        <th>填写内容</th>#}
+{#        <th>当前值</th>#}
+{#        <th>请更新值，留空为不更新</th>#}
+{#    </tr>#}
+{#        {% for i in sqlresult %}#}
+{#            <tr>#}
+{#                {{ form.csrf_token }}#}
+{#                <td>{{ i[0] }}</td>#}
+{#                <td>{{ i[1] }}</td>#}
+{#                <td>{{ i[2] }}</td>#}
+{#                <td>{{ i[3] }}</td>#}
+{#                <td>#}
+{#                    <input name="values" value="" type="text">#}
+{#                </td>#}
+{#            </tr>#}
+{#        {% endfor %}#}
+{#    </table>#}
+{#    <td><button type="submit">提交</button></td>#}
+{#    </form>#}
+{% endblock %}
+

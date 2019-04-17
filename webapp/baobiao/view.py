@@ -4,17 +4,17 @@ from . import _baobiao
 from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
 from flask_login import login_required, current_user
 import os
-import xlrd
-import xlwt
-from .form import BaobiaoForm, TianxieForm, excels
+from .form import BaobiaoForm, TianxieForm, QueryForm, excels
 from pypinyin import lazy_pinyin
 import pymysql
 import re
+import pyexcel
 from .. import conn
 
 FILE_TO_SET = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 @_baobiao.route('/')
@@ -127,5 +127,35 @@ def baobiao_tianxie():
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def baobiao_query():
-    # return render_template("baobiao_query.html")
-    return render_template("test.html")
+    form = QueryForm()
+    if request.method == 'GET':
+        return render_template("baobiao_query.html", form=form)
+    else:
+        baobiao = FILE_TO_SET[str(form.excel.data)]
+        generatedate = request.values.get('generatedate')
+        lastdate = request.values.get('lastdate')
+        baobiao_compare(baobiao, generatedate, lastdate)
+        filedir = os.path.join(pardir, 'static', 'Generate', '资金期限表')
+        destdir = os.path.join(pardir, 'templates')
+        # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
+        # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
+        return render_template("baobiao_query_result.html", form=form)
+
+
+def baobiao_compare(baobiao, generatedate, lastdate):
+    baobiao_generate = "".join(lazy_pinyin(baobiao + '_' + generatedate.replace('-', '_')))
+    baobiao_last = "".join(lazy_pinyin(baobiao + '_' + lastdate.replace('-', '_')))
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()
+    sql = 'select distinct position, content from ' + baobiao_generate + ' where editable=True;'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult_generate = cursor.fetchall()
+    sql = 'select distinct position, content from ' + baobiao_last + ' where editable=True;'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult_last = cursor.fetchall()
+    print(sqlresult_generate)
+    print(12345)
+    print(sqlresult_last)
+    pass
