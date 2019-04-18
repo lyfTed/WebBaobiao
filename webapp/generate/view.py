@@ -40,18 +40,28 @@ def generateFile(filetogenerate_chinese, generatedate):
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
+    tablenamenew = filetogenerate + '_' + generatedate
     # 创建新表
-    sql = 'create table if not exists ' + filetogenerate + '_' + generatedate + \
-          ' select * from ' + filetogenerate + ';'
+    sql = 'create table if not exists ' + tablenamenew + \
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500),' \
+          ' editable Boolean, contentexplain VARCHAR(500), primary key (position));'
     cursor.execute(sql)
-    # 新增一列解释
-    sql = 'alter table ' + filetogenerate + '_' + generatedate + \
-          ' add contentexplain VARCHAR(500);'
-    print(sql)
-    cursor.execute(sql)
-    sql = 'update ' + filetogenerate + '_' + generatedate + \
-          ' set contentexplain=content;'
-    cursor.execute(sql)
+    conn.commit()
+    try:
+        sql = 'insert into ' + tablenamenew + ' (tablename, position, content, editable, contentexplain) ' \
+              'select tablename, position, content, editable, content from ' + filetogenerate + ';'
+        cursor.execute(sql)
+        conn.commit()
+    except:
+        print('已经初始化过本表')
+    finally:
+        pass
+    # sql = 'alter table ' + filetogenerate + '_' + generatedate + \
+    #       ' add contentexplain VARCHAR(500);'
+    # sql = 'update ' + filetogenerate + '_' + generatedate + \
+    #       ' set contentexplain=content;'
+    # cursor.execute(sql)
+
     # 从模板拿需要填写的格子
     sql = 'select distinct position, content from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)
@@ -60,9 +70,10 @@ def generateFile(filetogenerate_chinese, generatedate):
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
-        print(position)
+        # print(position)
         userlist = []
         userset = {}
+        # 提示哪些用户还未填写此张报表的这个格子
         alertlist = []
         # 获取用户和内容
         content_list = sqlresult[i][1].lstrip('|').split('|')
@@ -102,7 +113,7 @@ def generateFile(filetogenerate_chinese, generatedate):
         print(alertlist)
         sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionvalue) + \
               '" where position="' + str(position) + '";'
-        print(sql)
+        # print(sql)
         cursor.execute(sql)
     conn.commit()
     ######################
@@ -122,7 +133,6 @@ def generateFile(filetogenerate_chinese, generatedate):
     conn.commit()
     sqlresult = cursor.fetchall()
     for x in sqlresult:
-        print(x[1])
         sh[x[0]] = str(x[1])
     filedir = os.path.join(pardir, 'static', 'Generate', filetogenerate_chinese)
     if not os.path.exists(filedir):

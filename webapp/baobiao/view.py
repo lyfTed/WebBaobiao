@@ -134,12 +134,12 @@ def baobiao_query():
         baobiao = FILE_TO_SET[str(form.excel.data)]
         generatedate = request.values.get('generatedate')
         lastdate = request.values.get('lastdate')
-        baobiao_compare(baobiao, generatedate, lastdate)
+        result = baobiao_compare(baobiao, generatedate, lastdate)
         filedir = os.path.join(pardir, 'static', 'Generate', '资金期限表')
         destdir = os.path.join(pardir, 'templates')
         # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
         # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
-        return render_template("baobiao_query_result.html", form=form)
+        return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
 
 def baobiao_compare(baobiao, generatedate, lastdate):
@@ -147,15 +147,36 @@ def baobiao_compare(baobiao, generatedate, lastdate):
     baobiao_last = "".join(lazy_pinyin(baobiao + '_' + lastdate.replace('-', '_')))
     conn.ping(reconnect=True)
     cursor = conn.cursor()
-    sql = 'select distinct position, content from ' + baobiao_generate + ' where editable=True;'
+    # this term baobiao
+    sql = 'select distinct position, content, contentexplain from ' + baobiao_generate + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
     sqlresult_generate = cursor.fetchall()
+    result_generate = dict((x, [z, y]) for x, y, z in sqlresult_generate)
+    print(result_generate)
+    # last term baobiao
     sql = 'select distinct position, content from ' + baobiao_last + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
     sqlresult_last = cursor.fetchall()
-    print(sqlresult_generate)
-    print(12345)
-    print(sqlresult_last)
-    pass
+    result_last= dict((x, y) for x, y in sqlresult_last)
+    changedict = {}
+    for key in result_generate:
+        try:
+            value_explain = result_generate.get(key)[0].split('|')
+            value_explain = "，".join(value_explain).lstrip('，')
+            value_generate = result_generate.get(key)[1]
+            value_last = result_last.get(key)
+            pctchange = float(value_generate) / float(value_last) - 1
+            # print(str(round(pctchange * 100, 2)) + '%')
+            changedict[key] = [value_explain, value_last, value_generate, str(round(pctchange * 100, 2)) + '%', pctchange]
+        except KeyError:
+            print('No key in last table')
+            value_generate = result_generate.get(key)
+            value_last = None
+            pctchange = None
+            changedict[key] = [value_explain, value_last, value_generate, None, pctchange]
+        finally:
+            pass
+    # print(changedict)
+    return changedict

@@ -19,7 +19,7 @@ class TianxieForm(FlaskForm):
 
 
 class QueryForm(FlaskForm):
-    excel = SelectField('查询报表', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
+    excel = SelectField('报表名', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
                                  validators=[DataRequired()], coerce=int)
     generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
     lastdate = DateField(u'上期日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')

@@ -85,7 +85,8 @@ def importintodb(file_to_generate, filename):
     tablename_chinese = filename
     tablename = ''.join(lazy_pinyin(filename))
     sql = 'create table if not exists ' + tablename + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), editable Boolean);'
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), editable Boolean, ' \
+          'primary key (position));'
     cursor.execute(sql)
     for i in range(nrows):
         for j in range(ncols):
