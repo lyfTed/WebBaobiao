@@ -5,17 +5,6 @@ from flask_login import UserMixin
 from . import db, login_manager
 
 
-# class Role(db.Model):
-#     __tablename__ = 'roles'
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(64), unique=True)
-#     users = db.relationship('User', backref='role', lazy='dynamic')
-#     dept = db.Column(db.String(64))
-#
-#     def __repr__(self):
-#         return '<Role %r>' % self.name
-
-
 class User(UserMixin,  db.Model):
     __tablename__ = 'users'
     id = db.Column(db.String(6), primary_key=True)
@@ -58,3 +47,13 @@ class Report(db.Model):
 
     def __repr__(self):
         return '<Report %r>' % self.name
+
+
+class BaobiaoToSet(db.Model):
+    __tablename__ = 'baobiaotoset'
+    id = db.Column(db.Integer, primary_key=True)
+    file = db.Column(db.String(100), unique=True, index=True)
+
+    def __repr__(self):
+        # return '<BaobiaoToSet %r>' % self.file
+        return self.file

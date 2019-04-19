@@ -29,7 +29,7 @@ class MyBaseView(BaseView):
 
 
 # 管理数据库表，设置表显示哪些字段
-class MyDBView(ModelView):
+class MyUserView(ModelView):
     def is_accessible(self):
         if current_user.is_authenticated and current_user.username.lower() == 'admin':
             return True
@@ -44,7 +44,24 @@ class MyDBView(ModelView):
 
     def __init__(self, table, session, **kwargs):
         # You can pass name and other parameters if you want to
-        super(MyDBView, self).__init__(table, session, **kwargs)
+        super(MyUserView, self).__init__(table, session, **kwargs)
 
+
+class MyBaobiaoView(ModelView):
+    def is_accessible(self):
+        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+            return True
+        return False
+
+    # Disable model creation
+    can_create = True
+    can_edit = True
+    can_delete = True
+    # Override displayed fields
+    column_list = ('id', 'file')
+
+    def __init__(self, table, session, **kwargs):
+        # You can pass name and other parameters if you want to
+        super(MyBaobiaoView, self).__init__(table, session, **kwargs)
 
 

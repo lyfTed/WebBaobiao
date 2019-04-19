@@ -9,7 +9,7 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
-from webapp.admin.view import MyAdminView, MyDBView, MyBaseView
+from webapp.admin.view import MyAdminView, MyUserView, MyBaobiaoView, MyBaseView
 from flask_admin.contrib.fileadmin import FileAdmin
 
 from config import config
@@ -29,8 +29,8 @@ login_manager.login_view = 'auth.login'
 excels = UploadSet('Excels', DOCUMENTS)
 conn = pymysql.connect(host='localhost', user='root', passwd='lyfTeddy3.14', db='baobiaodb', use_unicode=True,
                            charset='utf8')
-
-from webapp.models import db, User
+FILE_TO_SET = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
+from webapp.models import db, User, BaobiaoToSet
 
 def create_app(config_name):
     # __name__ 决定应用根目录
@@ -48,8 +48,9 @@ def create_app(config_name):
     configure_uploads(app, excels)
     flask_admin.init_app(app)
     flask_admin.add_view(MyBaseView(name='报表主页面', endpoint='index'))
-    flask_admin.add_view(MyDBView(User, db.session, name='用户管理'))
-    flask_admin.add_view(FileAdmin(staticfilepath, name='模板与生成文件管理'))
+    flask_admin.add_view(MyUserView(User, db.session, name='用户管理'))
+    flask_admin.add_view(MyBaobiaoView(BaobiaoToSet, db.session, name='报表名管理'))
+    flask_admin.add_view(FileAdmin(staticfilepath, name='报表模板与生成文件管理'))
 
 
     # 注册蓝本

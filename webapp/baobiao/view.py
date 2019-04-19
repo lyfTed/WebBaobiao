@@ -10,11 +10,21 @@ import pymysql
 import re
 import pyexcel
 from .. import conn
+from ..models import BaobiaoToSet
 
-FILE_TO_SET = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+
+# 获取数据库中报表名
+def get_baobiao_name():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    FILE_TO_SET = {}
+    for i in range(len(result)):
+        FILE_TO_SET[str(i+1)] = str(result[i])
+    print(FILE_TO_SET)
+    return FILE_TO_SET
 
 
 @_baobiao.route('/')
@@ -31,14 +41,16 @@ def setbaobiao():
         for file in filetosetlist:
             baobiao_split(cursor, file)
             conn.commit()
-            conn.close()
-            flash('Baobiao(s) successfully Splitted')
-            return render_template('baobiao.html', form=form)
+        flash('Baobiao(s) Successfully Splitted')
+        conn.close()
+        return render_template('baobiao.html', form=form)
 
 
 def baobiao_split(cursor, file):
+    FILE_TO_SET = get_baobiao_name()
     filetoset_chinese = FILE_TO_SET[file]
-    filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file]))
+    filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file])).lower()
+    print(filetoset)
     sql = 'select distinct position, content from ' + filetoset + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
@@ -131,14 +143,19 @@ def baobiao_query():
     if request.method == 'GET':
         return render_template("baobiao_query.html", form=form)
     else:
+        FILE_TO_SET = get_baobiao_name()
         baobiao = FILE_TO_SET[str(form.excel.data)]
         generatedate = request.values.get('generatedate')
         lastdate = request.values.get('lastdate')
+        baobiao_generate = "".join(baobiao + '_' + generatedate.replace('-', '_'))
+        baobiao_last = "".join(baobiao + '_' + lastdate.replace('-', '_'))
         result = baobiao_compare(baobiao, generatedate, lastdate)
         filedir = os.path.join(pardir, 'static', 'Generate', '资金期限表')
         destdir = os.path.join(pardir, 'templates')
-        # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
-        # pyexcel.save_as(file_name=filedir+'/资金期限表_2018_04.xlsx', dest_file_name=destdir+'/query.handsontable.html')
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx',
+                        dest_file_name=destdir+'/query.handsontable.html')
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx',
+                        dest_file_name=destdir+'/last.handsontable.html')
         return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
 
@@ -180,3 +197,16 @@ def baobiao_compare(baobiao, generatedate, lastdate):
             pass
     # print(changedict)
     return changedict
+
+
+@_baobiao.route('/query/generate', methods=['GET', 'POST'])
+@login_required
+def show_generate_baobiao():
+    return render_template("query.handsontable.html")
+
+
+@_baobiao.route('/query/last', methods=['GET', 'POST'])
+@login_required
+def show_last_baobiao():
+    return render_template("last.handsontable.html")
+

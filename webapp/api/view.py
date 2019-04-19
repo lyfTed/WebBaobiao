@@ -14,16 +14,26 @@ from .form import UploadForm, excels, DownloadForm
 from .. import conn
 import pandas as pd
 from openpyxl import load_workbook
+from ..models import BaobiaoToSet
 
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 basedir = os.path.abspath(os.path.dirname(__file__))
 ALLOWED_EXTENSIONS = set(['xlsx'])
-FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
 
 
 # 用于判断文件后缀
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# 获取数据库中报表名
+def get_baobiao_name():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    FILE_TO_SET = {}
+    for i in range(len(result)):
+        FILE_TO_SET[str(i+1)] = str(result[i])
+    print(FILE_TO_SET)
+    return FILE_TO_SET
 
 
 @_api.route('/upload/')
@@ -59,7 +69,7 @@ def upload_file():
                     os.mkdir(filedir)
                 file.save(os.path.join(filedir, filename))
                 importintodb(os.path.join(filedir, filename), re.split('[_.]', filename)[0])
-        flash('File(s) successfully uploaded')
+        flash('File(s) Successfully Uploaded')
         return redirect('/api/upload')
 
 
@@ -88,23 +98,29 @@ def importintodb(file_to_generate, filename):
           '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), editable Boolean, ' \
           'primary key (position));'
     cursor.execute(sql)
-    for i in range(nrows):
-        for j in range(ncols):
-            position = cols[j] + rows[i]
-            content = str(df.iloc[i, j])
-            editable = False
-            if len(content) > 0 and content[0] == "|":
-                editable = True
-            sql = 'insert into ' + tablename + ' (tablename, position, content, editable) values ("' + \
-                  tablename_chinese + '","' + position + '", "' + str(content) + '", ' + str(editable) + ");"
-            cursor.execute(sql)
-    conn.commit()
+    try:
+        for i in range(nrows):
+            for j in range(ncols):
+                position = cols[j] + rows[i]
+                content = str(df.iloc[i, j])
+                editable = False
+                if len(content) > 0 and content[0] == "|":
+                    editable = True
+                sql = 'insert into ' + tablename + ' (tablename, position, content, editable) values ("' + \
+                      tablename_chinese + '","' + position + '", "' + str(content) + '", ' + str(editable) + ");"
+                cursor.execute(sql)
+        conn.commit()
+    except:
+        print('Table already exists')
+    finally:
+        pass
     conn.close()
 
 
 @_api.route('/download/', methods=['GET', 'POST'])
 @login_required
 def download():
+    FILE_TO_SET = get_baobiao_name()
     form = DownloadForm()
     downloadlist = request.values.getlist('excels')
     if downloadlist == []:
@@ -117,7 +133,7 @@ def download():
             os.remove(filedir+'/Baobiao.zip')
         zipf = zipfile.ZipFile(filedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
         for filetodownload in downloadlist:
-            filefolder = FILE_TO_DOWNLOAD[filetodownload]
+            filefolder = FILE_TO_SET[filetodownload]
             filename = filefolder + '_' + generatedate + '.xlsx'
             if os.path.isfile(os.path.join(filedir, filefolder, filename)):
                 zipf.write(filedir + '/' + filefolder + '/' + filename, filename)

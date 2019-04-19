@@ -10,17 +10,29 @@ from openpyxl import Workbook, load_workbook
 from .form import GenerateForm, excels
 from .. import conn
 from pypinyin import lazy_pinyin
+from ..models import BaobiaoToSet
+
 
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-FILE_TO_DOWNLOAD = {'1': '资金期限表', '2': 'G25', '3': 'Q02'}
+
+# 获取数据库中报表名
+def get_baobiao_name():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    FILE_TO_SET = {}
+    for i in range(len(result)):
+        FILE_TO_SET[str(i+1)] = str(result[i])
+    print(FILE_TO_SET)
+    return FILE_TO_SET
+
 
 
 @_generate.route('/')
 @login_required
 def generate():
     form = GenerateForm()
+    FILE_TO_SET = get_baobiao_name()
     generatelist = request.values.getlist('excels')
     generatedate = request.values.get('generatedate')
     if generatelist == []:
@@ -31,8 +43,9 @@ def generate():
         # print(basedir)
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
         for generatefile in generatelist:
-            filetogenerate_chinese = FILE_TO_DOWNLOAD[generatefile]
+            filetogenerate_chinese = FILE_TO_SET[generatefile]
             generateFile(filetogenerate_chinese, generatedate)
+        flash('Baobiao(s) Successfully Generated')
         return render_template('generate.html', form=form)
 
 
