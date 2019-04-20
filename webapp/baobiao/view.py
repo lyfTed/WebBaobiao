@@ -6,9 +6,9 @@ from flask_login import login_required, current_user
 import os
 from .form import BaobiaoForm, TianxieForm, QueryForm, excels
 from pypinyin import lazy_pinyin
-import pymysql
-import re
 import pyexcel
+from openpyxl import Workbook, load_workbook
+from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
 
@@ -27,9 +27,9 @@ def get_baobiao_name():
     return FILE_TO_SET
 
 
-@_baobiao.route('/')
+@_baobiao.route('/split/')
 @login_required
-def setbaobiao():
+def split():
     form = BaobiaoForm()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
@@ -96,9 +96,9 @@ def baobiao_split(cursor, file):
                 pass
 
 
-@_baobiao.route('/tianxie/', methods=['GET', 'POST'])
+@_baobiao.route('/fill/', methods=['GET', 'POST'])
 @login_required
-def baobiao_tianxie():
+def fill():
     form = TianxieForm()
     username = current_user.username.lower()
     conn.ping(reconnect=True)
@@ -128,17 +128,144 @@ def baobiao_tianxie():
             conn.commit()
             conn.close()
             flash("数据提交成功")
-            return redirect('/baobiao/tianxie/')
+            return redirect('/baobiao/fill/')
         except:
             flash("有个格子不是数字格式，只能填写数字格式")
-            return redirect('/baobiao/tianxie/')
+            return redirect('/baobiao/fill/')
         finally:
-            return redirect('/baobiao/tianxie/')
+            return redirect('/baobiao/fill/')
+
+
+@_baobiao.route('/generate')
+@login_required
+def generate():
+    form = GenerateForm()
+    FILE_TO_SET = get_baobiao_name()
+    generatelist = request.values.getlist('excels')
+    generatedate = request.values.get('generatedate')
+    if generatelist == []:
+        return render_template('generate.html', form=form)
+    else:
+        # print(generatedate)
+        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        allcomplete = True
+        for generatefile in generatelist:
+            filetogenerate_chinese = FILE_TO_SET[generatefile]
+            alert = generateFile(filetogenerate_chinese, generatedate)
+            if len(alert) != 0:
+                allcomplete = False
+                alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
+                flash('以下用户还未完成对应报表：' + alertmsg)
+        if allcomplete:
+            flash('报表生成成功')
+        else:
+            flash('报表生成成功但数据还未完整')
+        return render_template('generate.html', form=form)
+
+
+def generateFile(filetogenerate_chinese, generatedate):
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()
+    filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
+    tablenamenew = filetogenerate + '_' + generatedate
+    # 创建新表
+    sql = 'create table if not exists ' + tablenamenew + \
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500),' \
+          ' editable Boolean, contentexplain VARCHAR(500), primary key (position));'
+    cursor.execute(sql)
+    conn.commit()
+    try:
+        sql = 'insert into ' + tablenamenew + ' (tablename, position, content, editable, contentexplain) ' \
+              'select tablename, position, content, editable, content from ' + filetogenerate + ';'
+        cursor.execute(sql)
+        conn.commit()
+    except:
+        print('已经初始化过本表')
+    finally:
+        pass
+
+    # 从模板拿需要填写的格子
+    sql = 'select distinct position, content from ' + filetogenerate + ' where editable=True;'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult = cursor.fetchall()
+    # 用来提示哪些用户还未填写此张报表
+    alertset = set()
+    for i in range(len(sqlresult)):
+        # 获取哪个格子
+        position = sqlresult[i][0]
+        # print(position)
+        userlist = []
+        userset = {}
+        # 获取用户和内容
+        content_list = sqlresult[i][1].lstrip('|').split('|')
+        for content in content_list:
+            userandvalue = content.split('：')
+            if len(userandvalue) == 1:
+                userandvalue = content.split(':')
+            user = ''.join(lazy_pinyin(userandvalue[0]))
+            if len(userandvalue) > 1:
+                value = userandvalue[1]
+            else:
+                value = None
+            if user not in userlist:
+                userlist.append(user)
+                userset[user] = []
+            userset[user].append((position, value))
+        positionvaluelist = []
+        for user in userlist:
+            # print(user)
+            for i in range(len(userset[user])):
+                position = userset[user][i][0]
+                # value = userset[auth][i][0]
+                try:
+                    sql = 'select value from ' + user + \
+                        ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
+                    # print(sql)
+                    cursor.execute(sql)
+                    result = cursor.fetchall()
+                    value = result[0][0]
+                    positionvaluelist.append(value)
+                    if value is None:
+                        alertset.add(user)
+                except:
+                    alertset.add(user)
+                finally:
+                    pass
+        positionvalue = sum([x if x is not None else 0 for x in positionvaluelist])
+        sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionvalue) + \
+              '" where position="' + str(position) + '";'
+        # print(sql)
+        cursor.execute(sql)
+    conn.commit()
+    ######################
+    # 生成excel
+    # 计算行数列数
+    wb = load_workbook(pardir + '/static/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    sh = wb.active
+    sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult = cursor.fetchall()
+    for x in sqlresult:
+        sh[x[0]] = float(x[1])
+    # 把带公式计算的格子填入公式，自动计算
+    sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
+    cursor.execute(sql)
+    conn.commit()
+    sqlresult = cursor.fetchall()
+    for x in sqlresult:
+        sh[x[0]] = str(x[1])
+    filedir = os.path.join(pardir, 'static', 'Generate', filetogenerate_chinese)
+    if not os.path.exists(filedir):
+        os.mkdir(filedir)
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    return alertset
 
 
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
-def baobiao_query():
+def query():
     form = QueryForm()
     if request.method == 'GET':
         return render_template("baobiao_query.html", form=form)
@@ -146,9 +273,11 @@ def baobiao_query():
         FILE_TO_SET = get_baobiao_name()
         baobiao = FILE_TO_SET[str(form.excel.data)]
         generatedate = request.values.get('generatedate')
+        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
         lastdate = request.values.get('lastdate')
-        baobiao_generate = "".join(baobiao + '_' + generatedate.replace('-', '_'))
-        baobiao_last = "".join(baobiao + '_' + lastdate.replace('-', '_'))
+        lastdate = lastdate.split('-')[0] + '_' + lastdate.split('-')[1]
+        baobiao_generate = "".join(baobiao + '_' + generatedate)
+        baobiao_last = "".join(baobiao + '_' + lastdate)
         filedir = os.path.join(pardir, 'static', 'Generate', '资金期限表')
         destdir = os.path.join(pardir, 'templates')
 
@@ -215,4 +344,3 @@ def show_generate_baobiao():
 @login_required
 def show_last_baobiao():
     return render_template("last.handsontable.html")
-

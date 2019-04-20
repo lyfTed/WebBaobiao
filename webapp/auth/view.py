@@ -1,5 +1,6 @@
 from flask import render_template, redirect, request, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
+from pypinyin import lazy_pinyin
 ###从Flask_login导入login_user, logout_user, login_required 函数
 from . import _auth
 ###从本级目录中导入_user蓝本

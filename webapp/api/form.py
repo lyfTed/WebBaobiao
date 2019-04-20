@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 ###从Flask-WTF扩展导入Form基类
-from wtforms import SubmitField, SelectField,  SelectMultipleField, DateField
+from wtforms import SubmitField, SelectField,  SelectMultipleField
+from wtforms.fields.html5 import DateField
 ###从WTForms包中导入字段类
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileField, FileAllowed, FileRequired
@@ -18,8 +19,4 @@ class DownloadForm(FlaskForm):
     generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('下载')
 
-#
-# class SplitForm(FlaskForm):
-#     excels = SelectMultipleField('拆分报表', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
-#                                  validators=[DataRequired()], coerce=int)
-#     submit = SubmitField('Split')
+

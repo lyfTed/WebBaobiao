@@ -56,14 +56,10 @@ def create_app(config_name):
     # 注册蓝本
     from .main import _main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
-    # from .admin import _admin as admin_blueprint
-    # app.register_blueprint(admin_blueprint, url_prefix='/admin')
     from .auth import _auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     from .api import _api as api_blueprint
     app.register_blueprint(api_blueprint, url_prefix='/api')
-    from .generate import _generate as generate_blueprint
-    app.register_blueprint(generate_blueprint, url_prefix='/generate')
     from .baobiao import _baobiao as baobiao_blueprint
     app.register_blueprint(baobiao_blueprint, url_prefix='/baobiao')
     return app

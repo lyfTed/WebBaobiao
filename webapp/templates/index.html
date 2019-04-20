@@ -13,5 +13,11 @@
         Please Log In
     {% endif %}!
     </h1>
+    <h4>
+    {% if current_user.username.lower()=='admin' %}
+        <br>
+        <p>管理员用户可以点击管理员主页进入后台管理。</p>
+    {% endif %}
+    </h4>
 </div>
 {% endblock %}

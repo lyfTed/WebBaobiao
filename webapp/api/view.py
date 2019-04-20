@@ -32,7 +32,7 @@ def get_baobiao_name():
     FILE_TO_SET = {}
     for i in range(len(result)):
         FILE_TO_SET[str(i+1)] = str(result[i])
-    print(FILE_TO_SET)
+    # print(FILE_TO_SET)
     return FILE_TO_SET
 
 
@@ -128,6 +128,7 @@ def download():
     else:
         generatedate = request.values.get('generatedate')
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        print(generatedate)
         filedir = os.path.join(pardir, 'static', 'Generate')
         if os.path.exists(filedir+'/Baobiao.zip'):
             os.remove(filedir+'/Baobiao.zip')
@@ -138,6 +139,6 @@ def download():
             if os.path.isfile(os.path.join(filedir, filefolder, filename)):
                 zipf.write(filedir + '/' + filefolder + '/' + filename, filename)
         zipf.close()
-        return send_file(filedir+'\\'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
+        return send_file(filedir+'/'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
 
 
