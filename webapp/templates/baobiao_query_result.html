@@ -27,7 +27,7 @@
                 <td>{{ value[0] }}</td>
                 <td>{{ value[1] }}</td>
                 <td>{{ value[2] }}</td>
-                {% if value[-1] >= -2 and value[-1] <= 2 %}
+                {% if value[-1] is not none and value[-1] >= -2 and value[-1] <= 2 %}
                     <td>{{ value[3] }}</td>
                 {% else %}
                     <td><font color="red">{{ value[3] }}</font></td>

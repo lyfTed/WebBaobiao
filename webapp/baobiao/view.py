@@ -23,7 +23,7 @@ def get_baobiao_name():
     FILE_TO_SET = {}
     for i in range(len(result)):
         FILE_TO_SET[str(i+1)] = str(result[i])
-    print(FILE_TO_SET)
+    # print(FILE_TO_SET)
     return FILE_TO_SET
 
 
@@ -50,7 +50,7 @@ def baobiao_split(cursor, file):
     FILE_TO_SET = get_baobiao_name()
     filetoset_chinese = FILE_TO_SET[file]
     filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file])).lower()
-    print(filetoset)
+    # print(filetoset)
     sql = 'select distinct position, content from ' + filetoset + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
@@ -81,7 +81,7 @@ def baobiao_split(cursor, file):
               'value DOUBLE, primary key (baobiao, position));'
         cursor.execute(sql)
         for i in range(len(userset[user])):
-            print(userset[user][i])
+            # print(userset[user][i])
             position = userset[user][i][0]
             value = userset[user][i][1]
             try:
@@ -122,7 +122,7 @@ def baobiao_tianxie():
                 value = str(tianxie[i])
                 sql = 'update ' + username + ' set value=' + value + ' where baobiao="' + \
                         baobiao + '" and position="' + gezi + '";'
-                print(sql)
+                # print(sql)
                 if value != '':
                     cursor.execute(sql)
             conn.commit()
@@ -149,13 +149,12 @@ def baobiao_query():
         lastdate = request.values.get('lastdate')
         baobiao_generate = "".join(baobiao + '_' + generatedate.replace('-', '_'))
         baobiao_last = "".join(baobiao + '_' + lastdate.replace('-', '_'))
-        result = baobiao_compare(baobiao, generatedate, lastdate)
         filedir = os.path.join(pardir, 'static', 'Generate', '资金期限表')
         destdir = os.path.join(pardir, 'templates')
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx',
-                        dest_file_name=destdir+'/query.handsontable.html')
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx',
-                        dest_file_name=destdir+'/last.handsontable.html')
+
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query.handsontable.html')
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last.handsontable.html')
+        result = baobiao_compare(baobiao, generatedate, lastdate)
         return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
 
@@ -170,7 +169,7 @@ def baobiao_compare(baobiao, generatedate, lastdate):
     conn.commit()
     sqlresult_generate = cursor.fetchall()
     result_generate = dict((x, [z, y]) for x, y, z in sqlresult_generate)
-    print(result_generate)
+    # print(result_generate)
     # last term baobiao
     sql = 'select distinct position, content from ' + baobiao_last + ' where editable=True;'
     cursor.execute(sql)
@@ -184,9 +183,16 @@ def baobiao_compare(baobiao, generatedate, lastdate):
             value_explain = "，".join(value_explain).lstrip('，')
             value_generate = result_generate.get(key)[1]
             value_last = result_last.get(key)
-            pctchange = float(value_generate) / float(value_last) - 1
-            # print(str(round(pctchange * 100, 2)) + '%')
-            changedict[key] = [value_explain, value_last, value_generate, str(round(pctchange * 100, 2)) + '%', pctchange]
+            # print(value_generate)
+            print(value_last)
+            if float(value_last) != 0:
+                pctchange = float(value_generate) / float(value_last) - 1
+                show_result = str(round(pctchange * 100, 2)) + '%'
+            else:
+                pctchange = None
+                show_result = 'Cannot Compare Percentage Change'
+            changedict[key] = [value_explain, value_last, value_generate, show_result, pctchange]
+            print(pctchange)
         except KeyError:
             print('No key in last table')
             value_generate = result_generate.get(key)

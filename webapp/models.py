@@ -43,7 +43,7 @@ class Report(db.Model):
     __tablename__ = 'reports'
     id = db.Column(db.String(6), primary_key=True)
     name = db.Column(db.String(64), unique=True, index=True)
-    content = db.Column(db.String(100000))
+    content = db.Column(db.String(5000))
 
     def __repr__(self):
         return '<Report %r>' % self.name
