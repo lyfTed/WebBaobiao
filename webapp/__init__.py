@@ -11,11 +11,13 @@ from flask_moment import Moment
 from flask_uploads import UploadSet, configure_uploads, DOCUMENTS
 from webapp.admin.view import MyAdminView, MyUserView, MyBaobiaoView, MyBaseView
 from flask_admin.contrib.fileadmin import FileAdmin
+from flask import Blueprint
+
 
 from config import config
 import pymysql
 
-staticfilepath = os.path.join(os.path.dirname(__file__), 'static')
+staticfilepath = os.path.join(os.path.dirname(__file__), 'Files')
 bootstrap = Bootstrap()
 db = SQLAlchemy()
 flask_admin = Admin(index_view=AdminIndexView(name="后台管理", template='myadmin.html', url='/admin'))
@@ -34,6 +36,7 @@ from webapp.models import db, User, BaobiaoToSet
 
 def create_app(config_name):
     # __name__ 决定应用根目录
+    # app = Flask(__name__, static_url_path='', static_folder='')
     app = Flask(__name__)
     # 实例化flask_admin
     # 初始化app配置
@@ -62,4 +65,5 @@ def create_app(config_name):
     app.register_blueprint(api_blueprint, url_prefix='/api')
     from .baobiao import _baobiao as baobiao_blueprint
     app.register_blueprint(baobiao_blueprint, url_prefix='/baobiao')
+    from .baobiao import _baobiao as baobiao_blueprint
     return app

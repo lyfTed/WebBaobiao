@@ -64,7 +64,7 @@ def upload_file():
                 filename = rawfilename[0] + '.' + rawfilename[-1]
                 # 文件名加上用户名（不启用）
                 # filename = rawfilename[0] + '_' + username + '.' + rawfilename[-1]
-                filedir = os.path.join(pardir, 'static', 'upload', rawfilename[0])
+                filedir = os.path.join(pardir, 'Files', 'upload', rawfilename[0])
                 if not os.path.exists(filedir):
                     os.mkdir(filedir)
                 file.save(os.path.join(filedir, filename))
@@ -129,7 +129,7 @@ def download():
         generatedate = request.values.get('generatedate')
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
         print(generatedate)
-        filedir = os.path.join(pardir, 'static', 'Generate')
+        filedir = os.path.join(pardir, 'Files', 'Generate')
         if os.path.exists(filedir+'/Baobiao.zip'):
             os.remove(filedir+'/Baobiao.zip')
         zipf = zipfile.ZipFile(filedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
