@@ -14,8 +14,7 @@ class UploadForm(FlaskForm):
 
 
 class DownloadForm(FlaskForm):
-    excels = SelectMultipleField('下载报表（可多选）', choices=[('1', '资金期限表'), ('2', 'G25'), ('3', 'Q02')],
-                                 validators=[DataRequired()], coerce=int)
+    excels = SelectMultipleField('下载报表（可多选）', validators=[DataRequired()], coerce=int)
     generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('下载')
 

@@ -19,15 +19,23 @@
 	  {% endif %}
 	{% endwith %}
 </p>
-<p>
-    请按照拆分报表中的文件名命名文件，例如：资金期限表、G25...仅支持xlsx文件。
-</p>
+    <br>
+<p><b>
+    请先前往管理员主页中的报表名管理，维护报表名，例如：资金期限表、G25......
+    再上传同名文件，仅支持xlsx文件。
+</b>
 <p>
     请把需要填写的格子在excel中填入该格子涉及人员及填写提示，以|开始，并用|及：分割。
 </p>
 <p>
     （例：|朱张婷：主权国家发行的风险权重为零的证券|陆轶凡：现金）
 </p>
+<p>
+    请把需要由excel公式生成的格子在excel中填入公式，并在excel中选择显示公式。（例：如下图）
+</p>
+    <img src="{{ url_for('static', filename='img/1.png') }}" width="55%" height="55%">
+    <br>
+    <br>
 <form method="post" action="/api/upload_file/" enctype="multipart/form-data">
     <dl>
 		<p>

@@ -31,9 +31,10 @@ def get_baobiao_name():
 @login_required
 def split():
     form = BaobiaoForm()
+    form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     conn.ping(reconnect=True)
     cursor = conn.cursor()
-    filetosetlist = request.values.getlist("excel")
+    filetosetlist = request.values.getlist("excels")
     # print(filetosetlist)
     if filetosetlist == []:
         return render_template("baobiao.html", form=form)
@@ -140,6 +141,7 @@ def fill():
 @login_required
 def generate():
     form = GenerateForm()
+    form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     FILE_TO_SET = get_baobiao_name()
     generatelist = request.values.getlist('excels')
     generatedate = request.values.get('generatedate')
@@ -270,6 +272,7 @@ def generateFile(filetogenerate_chinese, generatedate):
 @login_required
 def query():
     form = QueryForm()
+    form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     if request.method == 'GET':
         return render_template("baobiao_query.html", form=form)
     else:

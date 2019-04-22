@@ -125,13 +125,13 @@ def importintodb(file_to_generate, filename):
 def download():
     FILE_TO_SET = get_baobiao_name()
     form = DownloadForm()
+    form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     downloadlist = request.values.getlist('excels')
     if downloadlist == []:
         return render_template('download.html', form=form)
     else:
         generatedate = request.values.get('generatedate')
         generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
-        print(generatedate)
         filedir = os.path.join(pardir, 'Files', 'Generate')
         if os.path.exists(filedir+'/Baobiao.zip'):
             os.remove(filedir+'/Baobiao.zip')
