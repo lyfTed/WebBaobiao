@@ -50,6 +50,9 @@ def upload_file():
         username = current_user.username
         # print(username)
         # check if the post request has the file part
+        filedir = os.path.join(pardir, 'Files', 'upload')
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)

@@ -143,6 +143,9 @@ def generate():
     FILE_TO_SET = get_baobiao_name()
     generatelist = request.values.getlist('excels')
     generatedate = request.values.get('generatedate')
+    filedir = os.path.join(pardir, 'Files', 'generate')
+    if not os.path.exists(filedir):
+        os.mkdir(filedir)
     if generatelist == []:
         return render_template('generate.html', form=form)
     else:
