@@ -8,10 +8,11 @@ from .form import BaobiaoForm, TianxieForm, QueryForm, excels
 from pypinyin import lazy_pinyin
 import pyexcel
 from openpyxl import Workbook, load_workbook
+from  win32com.client import Dispatch
 from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
-
+import pythoncom
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -169,6 +170,7 @@ def generate():
 
 
 def generateFile(filetogenerate_chinese, generatedate):
+    pythoncom.CoInitialize()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
@@ -264,6 +266,15 @@ def generateFile(filetogenerate_chinese, generatedate):
     filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
+    # 保存带公式的xlsx
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    #### https://www.cnblogs.com/vhills/p/8327918.html
+    xlApp = Dispatch("Excel.Application")
+    xlApp.Visible = False
+    xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    xlBook.Save()
+    xlBook.Close()
+    wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     return alertset
 
