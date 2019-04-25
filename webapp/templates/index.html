@@ -13,11 +13,14 @@
         Please Log In
     {% endif %}!
     </h1>
-    <h4>
-    {% if current_user.is_authenticated and current_user.username.lower()=='admin' %}
-        <br>
-        <p>管理员用户可以点击管理员主页进入后台管理。</p>
-    {% endif %}
+    <h4>{% if current_user.is_authenticated %}
+            {% if current_user.is_authenticated and current_user.username.lower()=='admin' %}
+                <p>管理员用户可以点击管理员主页进入后台管理。</p>
+            {% endif %}
+            <br>
+            <p>流程：管理员上传报表模板，并拆分报表。用户填写报表数据，并可以生成报表。</p>
+            <P>查询报表功能可以比较任意两期报表的增长率，并预览报表。下载报表可打包下载所选择的报表。</p>
+        {% endif %}
     </h4>
 </div>
 {% endblock %}

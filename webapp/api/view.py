@@ -72,7 +72,7 @@ def upload_file():
                     os.mkdir(filedir)
                 file.save(os.path.join(filedir, filename))
                 importintodb(os.path.join(filedir, filename), re.split('[_.]', filename)[0])
-        flash('File(s) Successfully Uploaded')
+        flash('模板上传成功')
         return redirect('/api/upload')
 
 

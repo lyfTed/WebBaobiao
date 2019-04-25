@@ -50,7 +50,7 @@ def create_app(config_name):
     login_manager.init_app(app)
     configure_uploads(app, excels)
     flask_admin.init_app(app)
-    flask_admin.add_view(MyBaseView(name='报表主页面', endpoint='index'))
+    flask_admin.add_view(MyBaseView(name='报表主页', endpoint='index'))
     flask_admin.add_view(MyUserView(User, db.session, name='用户管理'))
     flask_admin.add_view(MyBaobiaoView(BaobiaoToSet, db.session, name='报表名管理'))
     flask_admin.add_view(FileAdmin(staticfilepath, name='报表模板与生成文件管理'))
