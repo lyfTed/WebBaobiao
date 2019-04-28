@@ -14,7 +14,7 @@
     {% endif %}!
     </h1>
     <h4>{% if current_user.is_authenticated %}
-            {% if current_user.is_authenticated and current_user.username.lower()=='admin' %}
+            {% if current_user.username.lower()=='admin' %}
                 <p>管理员用户可以点击管理员主页进入后台管理。</p>
             {% endif %}
             <br>
