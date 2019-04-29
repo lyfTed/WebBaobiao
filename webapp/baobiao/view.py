@@ -4,6 +4,7 @@ from . import _baobiao
 from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
 from flask_login import login_required, current_user
 import os
+import re
 from .form import BaobiaoForm, TianxieForm, QueryForm, excels
 from pypinyin import lazy_pinyin
 import pyexcel
@@ -65,9 +66,10 @@ def baobiao_split(cursor, file):
         # 获取用户和内容
         content_list = sqlresult[i][1].lstrip('|').split('|')
         for content in content_list:
-            userandvalue = content.split('：')
-            if len(userandvalue) == 1:
-                userandvalue = content.split(':')
+            # userandvalue = content.split('：')
+            # if len(userandvalue) == 1:
+            #     userandvalue = content.split(':')
+            userandvalue = re.split(':|：', content)
             user = ''.join(lazy_pinyin(userandvalue[0]))
             if len(userandvalue) > 1:
                 value = userandvalue[1]
