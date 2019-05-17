@@ -63,20 +63,16 @@ def upload_file():
         files = request.files.getlist("file")
         for file in files:
             if file and allowed_file(file.filename):
-                rawfilename = re.split('[_.]', file.filename)
-                filename = rawfilename[0] + '.' + rawfilename[-1]
-                # 文件名加上用户名（不启用）
-                # filename = rawfilename[0] + '_' + username + '.' + rawfilename[-1]
-                filedir = os.path.join(pardir, 'Files', 'upload', rawfilename[0])
-                if not os.path.exists(filedir):
-                    os.mkdir(filedir)
+                filename_chinese = re.split('[_.]', file.filename)[0]
+                filename_english = ''.join(lazy_pinyin(filename_chinese))
+                filename = filename_english + '.xlsx'
                 file.save(os.path.join(filedir, filename))
-                importintodb(os.path.join(filedir, filename), re.split('[_.]', filename)[0])
+                importintodb(os.path.join(filedir, filename), filename_chinese, filename_english)
         flash('模板上传成功')
         return redirect('/api/upload')
 
 
-def importintodb(file_to_generate, filename):
+def importintodb(file_to_generate, filename_chinese, filename_english):
     conn.ping(reconnect=True)
     wb = xlrd.open_workbook(file_to_generate)
     sh = wb.sheet_by_index(0)
@@ -94,10 +90,12 @@ def importintodb(file_to_generate, filename):
     df = df.fillna("")
     cursor = conn.cursor()
     # 创建table
-    # 用第一行第一列做表明
-    tablename_chinese = filename
-    tablename = ''.join(lazy_pinyin(filename))
-    sql = 'create table if not exists ' + tablename + \
+    # 用第一行第一列做表名
+    tablename_chinese = filename_chinese
+    tablename = filename_english
+    sql = 'drop table if exists ' + tablename
+    cursor.execute(sql)
+    sql = 'create table ' + tablename + \
           '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), editable Boolean, ' \
           'primary key (position));'
     cursor.execute(sql)

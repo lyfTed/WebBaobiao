@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="baobiaodb" uuid="0dc59251-c353-4ae4-911f-72fee5a468cf">
+    <data-source source="LOCAL" name="baobiaodb@localhost" uuid="66c45bee-afdd-4137-92a5-8e97bc173d83">
       <driver-ref>mysql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>

@@ -4,6 +4,7 @@ from flask_admin import Admin, AdminIndexView, BaseView, expose
 from flask_login import current_user
 from flask_admin.contrib.sqla import ModelView
 from flask import url_for
+from .form import BaobiaoTeSetForm
 
 # 定制一个页面，用自己的模板（仅仅是页面）然后再程序中加入代码 admin.add_view(MyNews(name=u'发表新闻'))
 class MyAdminView(BaseView):
@@ -58,7 +59,9 @@ class MyBaobiaoView(ModelView):
     can_edit = True
     can_delete = True
     # Override displayed fields
-    column_list = ('id', 'file')
+    column_list = ('id', 'file', 'freq')
+
+    form = BaobiaoTeSetForm
 
     def __init__(self, table, session, **kwargs):
         # You can pass name and other parameters if you want to

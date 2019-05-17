@@ -53,6 +53,7 @@ class BaobiaoToSet(db.Model):
     __tablename__ = 'baobiaotoset'
     id = db.Column(db.Integer, primary_key=True)
     file = db.Column(db.String(100), unique=True, index=True)
+    freq = db.Column(db.String(10))
 
     def __repr__(self):
         # return '<BaobiaoToSet %r>' % self.file

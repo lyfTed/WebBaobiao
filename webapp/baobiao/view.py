@@ -155,7 +155,7 @@ def generate():
         return render_template('generate.html', form=form)
     else:
         # print(generatedate)
-        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        generatedate = generatedate.replace('-', '_')
         allcomplete = True
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_SET[generatefile]
@@ -178,7 +178,9 @@ def generateFile(filetogenerate_chinese, generatedate):
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
     # 创建新表
-    sql = 'create table if not exists ' + tablenamenew + \
+    sql = 'drop table if exists ' + tablenamenew
+    cursor.execute(sql)
+    sql = 'create table ' + tablenamenew + \
           '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500),' \
           ' editable Boolean, contentexplain VARCHAR(500), primary key (position));'
     cursor.execute(sql)
@@ -189,7 +191,7 @@ def generateFile(filetogenerate_chinese, generatedate):
         cursor.execute(sql)
         conn.commit()
     except:
-        print('已经初始化过本表')
+        print('Update Table Failure')
     finally:
         pass
 
@@ -250,7 +252,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     ######################
     # 生成excel
     # 计算行数列数
-    wb = load_workbook(pardir + '/Files/upload/' + filetogenerate_chinese + '/' + filetogenerate_chinese + '.xlsx')
+    wb = load_workbook(pardir + '/Files/upload/' + filetogenerate + '.xlsx')
     sh = wb.active
     sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
     cursor.execute(sql)
@@ -265,19 +267,19 @@ def generateFile(filetogenerate_chinese, generatedate):
     sqlresult = cursor.fetchall()
     for x in sqlresult:
         sh[x[0]] = str(x[1])
-    filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate_chinese)
+    filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
     # 保存带公式的xlsx
-    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     #### https://www.cnblogs.com/vhills/p/8327918.html
     xlApp = Dispatch("Excel.Application")
     xlApp.Visible = False
-    xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     xlBook.Save()
     xlBook.Close()
-    wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
-    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    wb = load_workbook(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx', data_only=True)
+    wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     return alertset
 
 
@@ -291,13 +293,14 @@ def query():
     else:
         FILE_TO_SET = get_baobiao_name()
         baobiao = FILE_TO_SET[str(form.excel.data)]
+        baobiao = "".join(lazy_pinyin(baobiao))
         generatedate = request.values.get('generatedate')
-        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        generatedate = generatedate.replace('-', '_')
         lastdate = request.values.get('lastdate')
-        lastdate = lastdate.split('-')[0] + '_' + lastdate.split('-')[1]
-        baobiao_generate = "".join(baobiao + '_' + generatedate)
-        baobiao_last = "".join(baobiao + '_' + lastdate)
-        filedir = os.path.join(pardir, 'Files', 'Generate', '资金期限表')
+        lastdate = lastdate.replace('-', '_')
+        baobiao_generate = baobiao + '_' + generatedate
+        baobiao_last = baobiao + '_' + lastdate
+        filedir = os.path.join(pardir, 'Files', 'Generate', baobiao)
         destdir = os.path.join(pardir, 'templates')
 
         pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query.handsontable.html')
