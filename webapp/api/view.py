@@ -96,7 +96,7 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     sql = 'drop table if exists ' + tablename
     cursor.execute(sql)
     sql = 'create table ' + tablename + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), editable Boolean, ' \
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500), editable Boolean, ' \
           'primary key (position));'
     cursor.execute(sql)
     try:
@@ -112,7 +112,7 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
                 cursor.execute(sql)
         conn.commit()
     except:
-        print('Table already exists')
+        print('Import Into Table Failure')
     finally:
         pass
     conn.close()

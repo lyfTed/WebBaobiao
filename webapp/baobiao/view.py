@@ -63,12 +63,17 @@ def baobiao_split(cursor, file):
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
-        # 获取用户和内容
-        content_list = sqlresult[i][1].lstrip('|').split('|')
+        # 获取计算式子
+        ###################
+        content_list = re.split('[-+*/()（）]', sqlresult[i][1].lstrip('|'))
+        content_list = [s for s in content_list if s != '']
+        # 存储分割后的数据进报表表
+        content_store = ';'.join(content_list)
+        sql = 'update ' + filetoset + ' set content_list="' + str(content_store) + '" where position="' + str(position) + '";'
+        cursor.execute(sql)
+        conn.commit()
+        # 拆分到用户表
         for content in content_list:
-            # userandvalue = content.split('：')
-            # if len(userandvalue) == 1:
-            #     userandvalue = content.split(':')
             userandvalue = re.split(':|：', content)
             user = ''.join(lazy_pinyin(userandvalue[0]))
             if len(userandvalue) > 1:
@@ -196,7 +201,7 @@ def generateFile(filetogenerate_chinese, generatedate):
         pass
 
     # 从模板拿需要填写的格子
-    sql = 'select distinct position, content from ' + filetogenerate + ' where editable=True;'
+    sql = 'select distinct position, content, content_list from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
@@ -205,15 +210,12 @@ def generateFile(filetogenerate_chinese, generatedate):
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
-        # print(position)
         userlist = []
         userset = {}
         # 获取用户和内容
-        content_list = sqlresult[i][1].lstrip('|').split('|')
+        content_list = sqlresult[i][2].split(';')
         for content in content_list:
-            userandvalue = content.split('：')
-            if len(userandvalue) == 1:
-                userandvalue = content.split(':')
+            userandvalue = re.split(':|：', content)
             user = ''.join(lazy_pinyin(userandvalue[0]))
             if len(userandvalue) > 1:
                 value = userandvalue[1]
@@ -223,27 +225,27 @@ def generateFile(filetogenerate_chinese, generatedate):
                 userlist.append(user)
                 userset[user] = []
             userset[user].append((position, value))
-        positionvaluelist = []
+        uservaluelist = []
         for user in userlist:
             # print(user)
             for i in range(len(userset[user])):
                 position = userset[user][i][0]
-                # value = userset[auth][i][0]
                 try:
                     sql = 'select value from ' + user + \
                         ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
-                    # print(sql)
                     cursor.execute(sql)
                     result = cursor.fetchall()
                     value = result[0][0]
-                    positionvaluelist.append(value)
+                    uservaluelist.append(value)
                     if value is None:
                         alertset.add(user)
                 except:
                     alertset.add(user)
                 finally:
                     pass
-        positionvalue = sum([x if x is not None else 0 for x in positionvaluelist])
+        print(uservaluelist)
+        ###### 代入运算式
+        # 需要按式子中的顺序查找对应的值
         sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionvalue) + \
               '" where position="' + str(position) + '";'
         # print(sql)
