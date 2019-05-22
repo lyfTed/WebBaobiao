@@ -86,8 +86,7 @@ def baobiao_split(cursor, file):
             userset[user].append((position, value))
     for user in userlist:
         sql = 'create table if not exists ' + user + \
-              '(baobiao VARCHAR(100), position VARCHAR(100), content VARCHAR(500), ' \
-              'value DOUBLE, primary key (baobiao, position));'
+              '(baobiao VARCHAR(100), position VARCHAR(100), content VARCHAR(500), value DOUBLE);'
         cursor.execute(sql)
         for i in range(len(userset[user])):
             # print(userset[user][i])
@@ -128,9 +127,10 @@ def fill():
             for i in range(len(tianxie)):
                 baobiao = sqlresult[i][0]
                 gezi = sqlresult[i][1]
+                content = sqlresult[i][2]
                 value = str(tianxie[i])
                 sql = 'update ' + username + ' set value=' + value + ' where baobiao="' + \
-                        baobiao + '" and position="' + gezi + '";'
+                        baobiao + '" and position="' + gezi + '" and content="' + content + '";'
                 # print(sql)
                 if value != '':
                     cursor.execute(sql)
@@ -186,13 +186,13 @@ def generateFile(filetogenerate_chinese, generatedate):
     sql = 'drop table if exists ' + tablenamenew
     cursor.execute(sql)
     sql = 'create table ' + tablenamenew + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500),' \
-          ' editable Boolean, contentexplain VARCHAR(500), primary key (position));'
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(100),' \
+          ' editable Boolean, content_formula VARCHAR(500), content_list VARCHAR(500), primary key (position));'
     cursor.execute(sql)
     conn.commit()
     try:
-        sql = 'insert into ' + tablenamenew + ' (tablename, position, content, editable, contentexplain) ' \
-              'select tablename, position, content, editable, content from ' + filetogenerate + ';'
+        sql = 'insert into ' + tablenamenew + ' (tablename, position, content, editable, content_formula, content_list) ' \
+              'select tablename, position, content, editable, content, content_list from ' + filetogenerate + ';'
         cursor.execute(sql)
         conn.commit()
     except:
@@ -203,54 +203,50 @@ def generateFile(filetogenerate_chinese, generatedate):
     # 从模板拿需要填写的格子
     sql = 'select distinct position, content, content_list from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)
-    conn.commit()
+    # conn.commit()
     sqlresult = cursor.fetchall()
     # 用来提示哪些用户还未填写此张报表
     alertset = set()
+    # 按每一个格子循环去用户表中取数
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
-        userlist = []
-        userset = {}
+        formula = sqlresult[i][1]
         # 获取用户和内容
         content_list = sqlresult[i][2].split(';')
+        uservalue_list = []
         for content in content_list:
             userandvalue = re.split(':|：', content)
             user = ''.join(lazy_pinyin(userandvalue[0]))
             if len(userandvalue) > 1:
-                value = userandvalue[1]
+                valuecontent = userandvalue[1]
             else:
-                value = None
-            if user not in userlist:
-                userlist.append(user)
-                userset[user] = []
-            userset[user].append((position, value))
-        uservaluelist = []
-        for user in userlist:
-            # print(user)
-            for i in range(len(userset[user])):
-                position = userset[user][i][0]
-                try:
-                    sql = 'select value from ' + user + \
-                        ' where baobiao="' + filetogenerate_chinese + '" and position="' + position + '";'
-                    cursor.execute(sql)
-                    result = cursor.fetchall()
-                    value = result[0][0]
-                    uservaluelist.append(value)
-                    if value is None:
-                        alertset.add(user)
-                except:
-                    alertset.add(user)
-                finally:
-                    pass
-        print(uservaluelist)
-        ###### 代入运算式
-        # 需要按式子中的顺序查找对应的值
-        sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionvalue) + \
+                valuecontent = None
+            sql = 'select value from ' + user + ' where baobiao="' + filetogenerate_chinese + '" and position="' + \
+                    str(position) + '" and content="' + valuecontent + '";'
+            cursor.execute(sql)
+            # conn.commit()
+            value = cursor.fetchone()[0]
+            uservalue_list.append(value)
+            # 代入运算式
+            # 需要按式子中的顺序查找对应的值，用uservalue_list代替content_list中的值并代入formula
+            print(userandvalue)
+            print(value)
+            if value is None:
+                alertset.add(user)
+                formula = formula.replace(content, str(0))
+            else:
+                formula = formula.replace(content, str(value))
+        formula = formula.replace("（", "(")
+        formula = formula.replace("）", ")")
+        print(formula)
+        positionresult = eval(formula.lstrip("|"))
+        print(positionresult)
+
+        sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionresult) + \
               '" where position="' + str(position) + '";'
-        # print(sql)
         cursor.execute(sql)
-    conn.commit()
+        conn.commit()
     ######################
     # 生成excel
     # 计算行数列数
@@ -317,7 +313,7 @@ def baobiao_compare(baobiao, generatedate, lastdate):
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     # this term baobiao
-    sql = 'select distinct position, content, contentexplain from ' + baobiao_generate + ' where editable=True;'
+    sql = 'select distinct position, content, content_formula from ' + baobiao_generate + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
     sqlresult_generate = cursor.fetchall()
