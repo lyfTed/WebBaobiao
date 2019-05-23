@@ -9,7 +9,9 @@ from .form import BaobiaoForm, TianxieForm, QueryForm, excels
 from pypinyin import lazy_pinyin
 import pyexcel
 from openpyxl import Workbook, load_workbook
-from  win32com.client import Dispatch
+from openpyxl.styles import numbers
+from win32com.client.gencache import EnsureDispatch
+from win32com.client import Dispatch, constants
 from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
@@ -239,9 +241,9 @@ def generateFile(filetogenerate_chinese, generatedate):
                 formula = formula.replace(content, str(value))
         formula = formula.replace("（", "(")
         formula = formula.replace("）", ")")
-        print(formula)
-        positionresult = eval(formula.lstrip("|"))
-        print(positionresult)
+        # print(formula)
+        positionresult = round(eval(formula.lstrip("|")), 2)
+        # print(positionresult)
 
         sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionresult) + \
               '" where position="' + str(position) + '";'
@@ -258,6 +260,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     sqlresult = cursor.fetchall()
     for x in sqlresult:
         sh[x[0]] = float(x[1])
+        sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
     # 把带公式计算的格子填入公式，自动计算
     sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
     cursor.execute(sql)
@@ -265,17 +268,20 @@ def generateFile(filetogenerate_chinese, generatedate):
     sqlresult = cursor.fetchall()
     for x in sqlresult:
         sh[x[0]] = str(x[1])
+        sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
     filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
     # 保存带公式的xlsx
     wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
+    # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值，最后再存为html用于预览
     #### https://www.cnblogs.com/vhills/p/8327918.html
-    xlApp = Dispatch("Excel.Application")
+    xlApp = EnsureDispatch("Excel.Application")
     xlApp.Visible = False
     xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     xlBook.Save()
     xlBook.Close()
+    xlApp.Quit()
     wb = load_workbook(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx', data_only=True)
     wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     return alertset
@@ -284,6 +290,7 @@ def generateFile(filetogenerate_chinese, generatedate):
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def query():
+    pythoncom.CoInitialize()
     form = QueryForm()
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     if request.method == 'GET':
@@ -300,9 +307,23 @@ def query():
         baobiao_last = baobiao + '_' + lastdate
         filedir = os.path.join(pardir, 'Files', 'Generate', baobiao)
         destdir = os.path.join(pardir, 'templates')
+        ######
+        # handsontable 的html有点问题，换一种excel存储为html的方式
+        # pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query.handsontable.html')
+        # pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last.handsontable.html')
 
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query.handsontable.html')
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last.handsontable.html')
+        ######
+        #### https://stackoverflow.com/questions/13407744/excel-how-to-find-the-default-file-extension
+        # 保存成html来预览
+        xlApp = EnsureDispatch("Excel.Application")
+        xlApp.Visible = False
+        xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_generate + '.xlsx')
+        xlBook.SaveAs(destdir+'/query_report.html', constants.xlHtml)
+        xlBook.Close()
+        xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_last + '.xlsx')
+        xlBook.SaveAs(destdir+'/last_report.html', constants.xlHtml)
+        xlBook.Close()
+        xlApp.Quit()
         result = baobiao_compare(baobiao, generatedate, lastdate)
         return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
@@ -357,10 +378,12 @@ def baobiao_compare(baobiao, generatedate, lastdate):
 @_baobiao.route('/query/generate', methods=['GET', 'POST'])
 @login_required
 def show_generate_baobiao():
-    return render_template("query.handsontable.html")
+    destdir = os.path.join(pardir, "templates", "query_report.html")
+    print(destdir)
+    return send_file(destdir)
 
 
 @_baobiao.route('/query/last', methods=['GET', 'POST'])
 @login_required
 def show_last_baobiao():
-    return render_template("last.handsontable.html")
+    return render_template("last_report.html")
