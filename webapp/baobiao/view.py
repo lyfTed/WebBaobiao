@@ -16,6 +16,7 @@ from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
+from selenium import webdriver
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -90,20 +91,22 @@ def baobiao_split(cursor, file):
         sql = 'create table if not exists ' + user + \
               '(baobiao VARCHAR(100), position VARCHAR(100), content VARCHAR(500), value DOUBLE);'
         cursor.execute(sql)
+        sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
+        cursor.execute(sql)
         for i in range(len(userset[user])):
             # print(userset[user][i])
             position = userset[user][i][0]
             value = userset[user][i][1]
-            try:
-                sql = 'insert into ' + user + ' (baobiao, position, content) values ("' + \
-                      filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '");'
-                cursor.execute(sql)
-            except:
-                sql = 'update ' + user + ' set content="' + str(value) + '" where baobiao="' + \
-                      filetoset_chinese + '" and position="' + str(position) + '";'
-                cursor.execute(sql)
-            else:
-                pass
+            sql = 'insert into ' + user + ' (baobiao, position, content) values ("' + \
+                  filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '");'
+            cursor.execute(sql)
+            print("#######################")
+            print(sql)
+
+            # sql = 'update ' + user + ' set content="' + str(value) + '" where baobiao="' + \
+            #       filetoset_chinese + '" and position="' + str(position) + '";'
+            # cursor.execute(sql)
+            # print(1)
 
 
 @_baobiao.route('/fill/', methods=['GET', 'POST'])
@@ -232,8 +235,8 @@ def generateFile(filetogenerate_chinese, generatedate):
             uservalue_list.append(value)
             # 代入运算式
             # 需要按式子中的顺序查找对应的值，用uservalue_list代替content_list中的值并代入formula
-            print(userandvalue)
-            print(value)
+            # print(userandvalue)
+            # print(value)
             if value is None:
                 alertset.add(user)
                 formula = formula.replace(content, str(0))
@@ -283,6 +286,11 @@ def generateFile(filetogenerate_chinese, generatedate):
     xlBook.Close()
     xlApp.Quit()
     wb = load_workbook(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx', data_only=True)
+    # 删除除了第一个sheet外的sheet
+    # sheetnames = wb.get_sheet_names()
+    # for i in range(1, len(sheetnames)):
+    #     sheet = wb.get_sheet_by_name(sheetnames[i])
+    #     wb.remove_sheet(sheet)
     wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
     return alertset
 
@@ -309,21 +317,21 @@ def query():
         destdir = os.path.join(pardir, 'templates')
         ######
         # handsontable 的html有点问题，换一种excel存储为html的方式
-        # pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query.handsontable.html')
-        # pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last.handsontable.html')
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query_report.handsontable.html')
+        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last_report.handsontable.html')
 
         ######
         #### https://stackoverflow.com/questions/13407744/excel-how-to-find-the-default-file-extension
-        # 保存成html来预览
-        xlApp = EnsureDispatch("Excel.Application")
-        xlApp.Visible = False
-        xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_generate + '.xlsx')
-        xlBook.SaveAs(destdir+'/query_report.html', constants.xlHtml)
-        xlBook.Close()
-        xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_last + '.xlsx')
-        xlBook.SaveAs(destdir+'/last_report.html', constants.xlHtml)
-        xlBook.Close()
-        xlApp.Quit()
+        # # 保存成html来预览
+        # xlApp = EnsureDispatch("Excel.Application")
+        # xlApp.Visible = False
+        # xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_generate + '.xlsx')
+        # xlBook.SaveAs(destdir+'/query_report/query_report.html', constants.xlHtml)
+        # xlBook.Close()
+        # xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_last + '.xlsx')
+        # xlBook.SaveAs(destdir+'/last_report/last_report.html', constants.xlHtml)
+        # xlBook.Close()
+        # xlApp.Quit()
         result = baobiao_compare(baobiao, generatedate, lastdate)
         return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
@@ -378,12 +386,12 @@ def baobiao_compare(baobiao, generatedate, lastdate):
 @_baobiao.route('/query/generate', methods=['GET', 'POST'])
 @login_required
 def show_generate_baobiao():
-    destdir = os.path.join(pardir, "templates", "query_report.html")
-    print(destdir)
-    return send_file(destdir)
+    # return send_file(os.path.join(pardir, "templates", "query_report", "query_report.html"))
+    # return render_template("query_report.html")
+    return render_template("query_report.handsontable.html")
 
 
 @_baobiao.route('/query/last', methods=['GET', 'POST'])
 @login_required
 def show_last_baobiao():
-    return render_template("last_report.html")
+    return render_template("last_report.handsontable.html")
