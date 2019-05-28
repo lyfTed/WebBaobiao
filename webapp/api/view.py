@@ -31,9 +31,22 @@ def get_baobiao_name():
     result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
     FILE_TO_SET = {}
     for i in range(len(result)):
-        FILE_TO_SET[str(i+1)] = str(result[i])
-    # print(FILE_TO_SET)
+        rs = str(result[i]).split(',')
+        file = str(rs[0].strip('"').strip("'"))
+        freq = str(rs[1].strip('"').strip("'"))
+        FILE_TO_SET[str(i+1)] = file
     return FILE_TO_SET
+
+
+def get_baobiao_freq():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    FREQ_OF_FILE = {}
+    for i in range(len(result)):
+        rs = str(result[i]).split(',')
+        file = str(rs[0].strip('"').strip("'"))
+        freq = str(rs[1].strip('"').strip("'"))
+        FREQ_OF_FILE[file] = freq
+    return FREQ_OF_FILE
 
 
 @_api.route('/upload/')
@@ -73,6 +86,8 @@ def upload_file():
 
 
 def importintodb(file_to_generate, filename_chinese, filename_english):
+    FILE_TO_SET = get_baobiao_name()
+    FREQ_OF_FILE = get_baobiao_freq()
     conn.ping(reconnect=True)
     wb = xlrd.open_workbook(file_to_generate)
     sh = wb.sheet_by_index(0)
@@ -93,11 +108,12 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     # 用第一行第一列做表名
     tablename_chinese = filename_chinese
     tablename = filename_english
+    freq = FREQ_OF_FILE[tablename_chinese]
     sql = 'drop table if exists ' + tablename
     cursor.execute(sql)
     sql = 'create table ' + tablename + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500), editable Boolean, ' \
-          'primary key (position));'
+          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500),' \
+          ' freq VARCHAR(10), editable Boolean, primary key (position));'
     cursor.execute(sql)
     try:
         for i in range(nrows):
@@ -107,8 +123,8 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
                 editable = False
                 if len(content) > 0 and content[0] == "|":
                     editable = True
-                sql = 'insert into ' + tablename + ' (tablename, position, content, editable) values ("' + \
-                      tablename_chinese + '","' + position + '", "' + str(content) + '", ' + str(editable) + ");"
+                sql = 'insert into ' + tablename + ' (tablename, position, content, freq, editable) values ("' + \
+                      tablename_chinese + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
                 cursor.execute(sql)
         conn.commit()
     except:

@@ -56,5 +56,4 @@ class BaobiaoToSet(db.Model):
     freq = db.Column(db.String(10))
 
     def __repr__(self):
-        # return '<BaobiaoToSet %r>' % self.file
-        return self.file
+        return '%r,%r' % (self.file, self.freq)
