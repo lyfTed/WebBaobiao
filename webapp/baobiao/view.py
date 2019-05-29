@@ -11,12 +11,12 @@ import pyexcel
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import numbers
 from win32com.client.gencache import EnsureDispatch
+import time
 from win32com.client import Dispatch, constants
 from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
-from selenium import webdriver
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -67,9 +67,10 @@ def split():
 
 def baobiao_split(cursor, file):
     FILE_TO_SET = get_baobiao_name()
+    FREQ_OF_FILE = get_baobiao_freq()
     filetoset_chinese = FILE_TO_SET[file]
     filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file])).lower()
-    # print(filetoset)
+    freq = FREQ_OF_FILE[filetoset_chinese]
     sql = 'select distinct position, content from ' + filetoset + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
@@ -101,8 +102,8 @@ def baobiao_split(cursor, file):
                 userset[user] = []
             userset[user].append((position, value))
     for user in userlist:
-        sql = 'create table if not exists ' + user + \
-              '(baobiao VARCHAR(100), position VARCHAR(100), content VARCHAR(500), value DOUBLE);'
+        sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), position VARCHAR(100),' \
+                ' content VARCHAR(500), value_last Double, value DOUBLE, freq VARCHAR(5));'
         cursor.execute(sql)
         sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
         cursor.execute(sql)
@@ -110,16 +111,11 @@ def baobiao_split(cursor, file):
             # print(userset[user][i])
             position = userset[user][i][0]
             value = userset[user][i][1]
-            sql = 'insert into ' + user + ' (baobiao, position, content) values ("' + \
-                  filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '");'
+            sql = 'insert into ' + user + ' (baobiao, position, content, freq) values ("' + \
+                  filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
             cursor.execute(sql)
-            print("#######################")
-            print(sql)
-
-            # sql = 'update ' + user + ' set content="' + str(value) + '" where baobiao="' + \
-            #       filetoset_chinese + '" and position="' + str(position) + '";'
-            # cursor.execute(sql)
-            # print(1)
+            # print("#######################")
+            # print(sql)
 
 
 @_baobiao.route('/fill/', methods=['GET', 'POST'])
@@ -130,7 +126,13 @@ def fill():
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     try:
-        sql = 'select distinct * from ' + username + ';'
+        thismonth = time.strftime('%m', time.localtime(time.time()))
+        if thismonth in ["02", "03", "05", "06", "08", "09", "11", "12"]:
+            sql = 'select distinct * from ' + username + ' where freq="M";'
+        if thismonth in ["04", "10"]:
+            sql = 'select distinct * from ' + username + ' where freq in ("M", "Q");'
+        elif thismonth in ["07", "01"]:
+            sql = 'select distinct * from ' + username + ';'
         cursor.execute(sql)
         sqlresult = cursor.fetchall()
     except:
@@ -200,6 +202,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
+    userlist = []
     # 创建新表
     sql = 'drop table if exists ' + tablenamenew
     cursor.execute(sql)
@@ -236,6 +239,8 @@ def generateFile(filetogenerate_chinese, generatedate):
         for content in content_list:
             userandvalue = re.split(':|：', content)
             user = ''.join(lazy_pinyin(userandvalue[0]))
+            if user not in userlist:
+                userlist.append(user)
             if len(userandvalue) > 1:
                 valuecontent = userandvalue[1]
             else:
@@ -305,6 +310,11 @@ def generateFile(filetogenerate_chinese, generatedate):
     #     sheet = wb.get_sheet_by_name(sheetnames[i])
     #     wb.remove_sheet(sheet)
     wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
+    ## 更新下user表中的上期值
+    for user in userlist:
+        sql = 'update ' + user + ' set value_last=value where baobiao="' + filetogenerate_chinese + '";'
+        cursor.execute(sql)
+        conn.commit()
     return alertset
 
 
