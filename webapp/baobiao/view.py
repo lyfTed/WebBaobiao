@@ -27,9 +27,22 @@ def get_baobiao_name():
     result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
     FILE_TO_SET = {}
     for i in range(len(result)):
-        FILE_TO_SET[str(i+1)] = str(result[i])
-    # print(FILE_TO_SET)
+        rs = str(result[i]).split(',')
+        file = str(rs[0].strip('"').strip("'"))
+        freq = str(rs[1].strip('"').strip("'"))
+        FILE_TO_SET[str(i+1)] = file
     return FILE_TO_SET
+
+
+def get_baobiao_freq():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    FREQ_OF_FILE = {}
+    for i in range(len(result)):
+        rs = str(result[i]).split(',')
+        file = str(rs[0].strip('"').strip("'"))
+        freq = str(rs[1].strip('"').strip("'"))
+        FREQ_OF_FILE[file] = freq
+    return FREQ_OF_FILE
 
 
 @_baobiao.route('/split/')

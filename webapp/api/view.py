@@ -145,7 +145,7 @@ def download():
         return render_template('download.html', form=form)
     else:
         generatedate = request.values.get('generatedate')
-        generatedate = generatedate.split('-')[0] + '_' + generatedate.split('-')[1]
+        generatedate = generatedate.replace('-', '_')
         filedir = os.path.join(pardir, 'Files', 'Generate')
         if os.path.exists(filedir+'/Baobiao.zip'):
             os.remove(filedir+'/Baobiao.zip')
@@ -153,6 +153,7 @@ def download():
         for filetodownload in downloadlist:
             filefolder = FILE_TO_SET[filetodownload]
             filename = filefolder + '_' + generatedate + '.xlsx'
+            print(filename)
             if os.path.isfile(os.path.join(filedir, filefolder, filename)):
                 zipf.write(filedir + '/' + filefolder + '/' + filename, filename)
         zipf.close()
