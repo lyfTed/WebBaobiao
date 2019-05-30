@@ -11,7 +11,7 @@ import pyexcel
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import numbers
 from win32com.client.gencache import EnsureDispatch
-import time
+from datetime import datetime, date, timedelta
 from win32com.client import Dispatch, constants
 from .form import GenerateForm, excels
 from .. import conn
@@ -126,15 +126,36 @@ def fill():
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     try:
-        thismonth = time.strftime('%m', time.localtime(time.time()))
-        if thismonth in ["02", "03", "05", "06", "08", "09", "11", "12"]:
-            sql = 'select distinct * from ' + username + ' where freq="M";'
-        if thismonth in ["04", "10"]:
-            sql = 'select distinct * from ' + username + ' where freq in ("M", "Q");'
-        elif thismonth in ["07", "01"]:
-            sql = 'select distinct * from ' + username + ';'
-        cursor.execute(sql)
-        sqlresult = cursor.fetchall()
+        lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+        lastm = lastmonthend.strftime(("%m"))
+        lastmonth = lastmonthend.strftime("_%Y_%m")
+        print(lastm)
+        if lastm in ["01", "02", "04", "05", "07", "08", "10", "11"]:
+            sql = 'create table if not exists ' + username + lastmonth + \
+                  ' select distinct * from ' + username + ' where freq="M";'
+            cursor.execute(sql)
+            lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
+            sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                  + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+            print(sql)
+            cursor.execute(sql)
+            sql = 'select distinct * from ' + username + lastmonth + ' where freq="M";'
+            cursor.execute(sql)
+            sqlresult = cursor.fetchall()
+        if lastm in ["03", "09"]:
+            sql = 'create table if not exists ' + username + lastmonth + \
+                  ' select distinct * from ' + username + ' where freq in ("M", "Q");'
+            cursor.execute(sql)
+            sql = 'select distinct * from ' + username + lastmonth + ' where freq in ("M", "Q");'
+            cursor.execute(sql)
+            sqlresult = cursor.fetchall()
+        elif lastm in ["06", "12"]:
+            sql = 'create table if not exists ' + username + lastmonth + \
+                  ' select distinct * from ' + username + ';'
+            cursor.execute(sql)
+            sql = 'select distinct * from ' + username + lastmonth + ';'
+            cursor.execute(sql)
+            sqlresult = cursor.fetchall()
     except:
         sqlresult = None
     if request.method == 'GET' and sqlresult is not None:
@@ -149,7 +170,7 @@ def fill():
                 gezi = sqlresult[i][1]
                 content = sqlresult[i][2]
                 value = str(tianxie[i])
-                sql = 'update ' + username + ' set value=' + value + ' where baobiao="' + \
+                sql = 'update ' + username + lastmonth + ' set value=' + value + ' where baobiao="' + \
                         baobiao + '" and position="' + gezi + '" and content="' + content + '";'
                 # print(sql)
                 if value != '':
@@ -310,11 +331,6 @@ def generateFile(filetogenerate_chinese, generatedate):
     #     sheet = wb.get_sheet_by_name(sheetnames[i])
     #     wb.remove_sheet(sheet)
     wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
-    ## 更新下user表中的上期值
-    for user in userlist:
-        sql = 'update ' + user + ' set value_last=value where baobiao="' + filetogenerate_chinese + '";'
-        cursor.execute(sql)
-        conn.commit()
     return alertset
 
 
