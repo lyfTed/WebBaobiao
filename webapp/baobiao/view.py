@@ -77,6 +77,8 @@ def baobiao_split(cursor, file):
     sqlresult = cursor.fetchall()
     userlist = []
     userset = {}
+    lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+    lastmonth = lastmonthend.strftime("_%Y_%m")
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
@@ -103,10 +105,15 @@ def baobiao_split(cursor, file):
             userset[user].append((position, value))
     for user in userlist:
         sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), position VARCHAR(100),' \
-                ' content VARCHAR(500), value_last Double, value DOUBLE, freq VARCHAR(5));'
+                ' content VARCHAR(500), value_last Double, value DOUBLE, submit_time VARCHAR(20), freq VARCHAR(5));'
         cursor.execute(sql)
         sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
         cursor.execute(sql)
+        try:
+            sql = 'delete from ' + user + lastmonth + ' where baobiao="' + filetoset_chinese + '";'
+            cursor.execute(sql)
+        except:
+            pass
         for i in range(len(userset[user])):
             # print(userset[user][i])
             position = userset[user][i][0]
@@ -114,8 +121,12 @@ def baobiao_split(cursor, file):
             sql = 'insert into ' + user + ' (baobiao, position, content, freq) values ("' + \
                   filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
             cursor.execute(sql)
-            # print("#######################")
-            # print(sql)
+            try:
+                sql = 'insert into ' + user + lastmonth + ' (baobiao, position, content, freq) values ("' + \
+                      filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+                cursor.execute(sql)
+            except:
+                pass
 
 
 @_baobiao.route('/fill/', methods=['GET', 'POST'])
@@ -125,27 +136,48 @@ def fill():
     username = current_user.username.lower()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
+    lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+    lastm = lastmonthend.strftime(("%m"))
+    lastmonth = lastmonthend.strftime("_%Y_%m")
     try:
-        lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
-        lastm = lastmonthend.strftime(("%m"))
-        lastmonth = lastmonthend.strftime("_%Y_%m")
-        print(lastm)
         if lastm in ["01", "02", "04", "05", "07", "08", "10", "11"]:
             sql = 'create table if not exists ' + username + lastmonth + \
                   ' select distinct * from ' + username + ' where freq="M";'
             cursor.execute(sql)
-            lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
-            sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                  + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
-            print(sql)
-            cursor.execute(sql)
+            try:
+                # 上一期， Monthly
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
             sql = 'select distinct * from ' + username + lastmonth + ' where freq="M";'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
-        if lastm in ["03", "09"]:
+        elif lastm in ["03", "09"]:
             sql = 'create table if not exists ' + username + lastmonth + \
                   ' select distinct * from ' + username + ' where freq in ("M", "Q");'
             cursor.execute(sql)
+            try:
+                # 上一期, Monthly
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
+            try:
+                # 上一期, Quarterly
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="Q");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
             sql = 'select distinct * from ' + username + lastmonth + ' where freq in ("M", "Q");'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
@@ -153,14 +185,43 @@ def fill():
             sql = 'create table if not exists ' + username + lastmonth + \
                   ' select distinct * from ' + username + ';'
             cursor.execute(sql)
+            try:
+                # 上一期, Monthly
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
+            try:
+                # 上一期, Quarterly
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="Q");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
+            try:
+                # 上一期, Half year
+                lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=153)).strftime("_%Y_%m")
+                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
+                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="H");'
+                cursor.execute(sql)
+                conn.commit()
+            except:
+                pass
             sql = 'select distinct * from ' + username + lastmonth + ';'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
     except:
         sqlresult = None
     if request.method == 'GET' and sqlresult is not None:
+        conn.close()
         return render_template("baobiao_tianxie.html", form=form, sqlresult=sqlresult)
     elif request.method == 'GET' and sqlresult is None:
+        conn.close()
         return render_template("baobiao_tianxie.html", form=form)
     elif request.method == 'POST':
         tianxie = request.form.getlist("values")
@@ -170,11 +231,16 @@ def fill():
                 gezi = sqlresult[i][1]
                 content = sqlresult[i][2]
                 value = str(tianxie[i])
+                submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
                 sql = 'update ' + username + lastmonth + ' set value=' + value + ' where baobiao="' + \
                         baobiao + '" and position="' + gezi + '" and content="' + content + '";'
-                # print(sql)
+                sql2 = 'update ' + username + lastmonth + ' set submit_time="' + submit_time + '" where baobiao="' + \
+                        baobiao + '" and position="' + gezi + '" and content="' + content + '";'
                 if value != '':
+                    print(sql)
+                    print(sql2)
                     cursor.execute(sql)
+                    cursor.execute(sql2)
             conn.commit()
             conn.close()
             flash("数据提交成功")
@@ -224,6 +290,9 @@ def generateFile(filetogenerate_chinese, generatedate):
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
     userlist = []
+    # 获取上个月日期
+    lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+    lastmonth = lastmonthend.strftime("_%Y_%m")
     # 创建新表
     sql = 'drop table if exists ' + tablenamenew
     cursor.execute(sql)
@@ -266,7 +335,7 @@ def generateFile(filetogenerate_chinese, generatedate):
                 valuecontent = userandvalue[1]
             else:
                 valuecontent = None
-            sql = 'select value from ' + user + ' where baobiao="' + filetogenerate_chinese + '" and position="' + \
+            sql = 'select value from ' + user + lastmonth + ' where baobiao="' + filetogenerate_chinese + '" and position="' + \
                     str(position) + '" and content="' + valuecontent + '";'
             cursor.execute(sql)
             # conn.commit()
@@ -284,9 +353,10 @@ def generateFile(filetogenerate_chinese, generatedate):
         formula = formula.replace("（", "(")
         formula = formula.replace("）", ")")
         # print(formula)
-        positionresult = round(eval(formula.lstrip("|")), 2)
-        # print(positionresult)
-
+        try:
+            positionresult = round(eval(formula.lstrip("|")), 2)
+        except:
+            positionresult = "=NA()" ##计算报错就在excel中填NA
         sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionresult) + \
               '" where position="' + str(position) + '";'
         cursor.execute(sql)
@@ -294,15 +364,18 @@ def generateFile(filetogenerate_chinese, generatedate):
     ######################
     # 生成excel
     # 计算行数列数
-    wb = load_workbook(pardir + '/Files/upload/' + filetogenerate + '.xlsx')
+    wb = load_workbook(pardir + '/Files/upload/' + filetogenerate_chinese + '.xlsx')
     sh = wb.active
     sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
     for x in sqlresult:
-        sh[x[0]] = float(x[1])
-        sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
+        try:
+            sh[x[0]] = float(x[1])
+            sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
+        except:
+            sh[x[0]] = x[1]
     # 把带公式计算的格子填入公式，自动计算
     sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
     cursor.execute(sql)
@@ -311,26 +384,26 @@ def generateFile(filetogenerate_chinese, generatedate):
     for x in sqlresult:
         sh[x[0]] = str(x[1])
         sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
-    filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate)
+    filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate_chinese)
     if not os.path.exists(filedir):
         os.mkdir(filedir)
     # 保存带公式的xlsx
-    wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值，最后再存为html用于预览
     #### https://www.cnblogs.com/vhills/p/8327918.html
     xlApp = EnsureDispatch("Excel.Application")
     xlApp.Visible = False
-    xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
+    xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     xlBook.Save()
     xlBook.Close()
     xlApp.Quit()
-    wb = load_workbook(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx', data_only=True)
+    wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
     # 删除除了第一个sheet外的sheet
     # sheetnames = wb.get_sheet_names()
     # for i in range(1, len(sheetnames)):
     #     sheet = wb.get_sheet_by_name(sheetnames[i])
     #     wb.remove_sheet(sheet)
-    wb.save(filedir + '/' + filetogenerate + '_' + generatedate + '.xlsx')
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     return alertset
 
 

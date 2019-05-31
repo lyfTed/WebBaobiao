@@ -16,6 +16,7 @@
         <th>填写内容</th>
         <th>上期值</th>
         <th>当前值</th>
+        <th>上次提交时间</th>
         <th>请更新值，留空为不更新</th>
     </tr>
         {% for i in sqlresult %}
@@ -26,6 +27,7 @@
                 <td>{{ i[2] }}</td>
                 <td>{{ i[3] }}</td>
                 <td>{{ i[4] }}</td>
+                <td>{{ i[5] }}</td>
                 <td>
                     <input name="values" value="" type="text">
                 </td>

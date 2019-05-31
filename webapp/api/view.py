@@ -78,7 +78,7 @@ def upload_file():
             if file and allowed_file(file.filename):
                 filename_chinese = re.split('[_.]', file.filename)[0]
                 filename_english = ''.join(lazy_pinyin(filename_chinese))
-                filename = filename_english + '.xlsx'
+                filename = filename_chinese + '.xlsx'
                 file.save(os.path.join(filedir, filename))
                 importintodb(os.path.join(filedir, filename), filename_chinese, filename_english)
         flash('模板上传成功')
