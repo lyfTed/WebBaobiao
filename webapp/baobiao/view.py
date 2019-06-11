@@ -2,6 +2,7 @@
 from . import _baobiao
 
 from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
+from pymysql import err
 from flask_login import login_required, current_user
 import os
 import re
@@ -153,7 +154,8 @@ def fill():
                 conn.commit()
             except:
                 pass
-            sql = 'select distinct * from ' + username + lastmonth + ' where freq="M";'
+            # 不考虑不同报表和格子位置，只要填写内容即只展现一次
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq="M" group by content;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["03", "09"]:
@@ -178,7 +180,7 @@ def fill():
                 conn.commit()
             except:
                 pass
-            sql = 'select distinct * from ' + username + lastmonth + ' where freq in ("M", "Q");'
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq in ("M", "Q") group by content;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["06", "12"]:
@@ -212,7 +214,7 @@ def fill():
                 conn.commit()
             except:
                 pass
-            sql = 'select distinct * from ' + username + lastmonth + ';'
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' group by content;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
     except:
@@ -232,10 +234,8 @@ def fill():
                 content = sqlresult[i][2]
                 value = str(tianxie[i])
                 submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
-                sql = 'update ' + username + lastmonth + ' set value=' + value + ' where baobiao="' + \
-                        baobiao + '" and position="' + gezi + '" and content="' + content + '";'
-                sql2 = 'update ' + username + lastmonth + ' set submit_time="' + submit_time + '" where baobiao="' + \
-                        baobiao + '" and position="' + gezi + '" and content="' + content + '";'
+                sql = 'update ' + username + lastmonth + ' set value=' + value + ' where content="' + content + '";'
+                sql2 = 'update ' + username + lastmonth + ' set submit_time="' + submit_time + '" where content="' + content + '";'
                 if value != '':
                     print(sql)
                     print(sql2)
@@ -335,12 +335,17 @@ def generateFile(filetogenerate_chinese, generatedate):
                 valuecontent = userandvalue[1]
             else:
                 valuecontent = None
-            sql = 'select value from ' + user + lastmonth + ' where baobiao="' + filetogenerate_chinese + '" and position="' + \
-                    str(position) + '" and content="' + valuecontent + '";'
-            cursor.execute(sql)
-            # conn.commit()
-            value = cursor.fetchone()[0]
-            uservalue_list.append(value)
+            try:
+                sql = 'select value from ' + user + lastmonth + ' where baobiao="' + filetogenerate_chinese + \
+                      '" and position="' + str(position) + '" and content="' + valuecontent + '";'
+                cursor.execute(sql)
+                value = cursor.fetchone()[0]
+                uservalue_list.append(value)
+            except err.DatabaseError:
+                value = None
+                uservalue_list.append(value)
+            else:
+                pass
             # 代入运算式
             # 需要按式子中的顺序查找对应的值，用uservalue_list代替content_list中的值并代入formula
             # print(userandvalue)
