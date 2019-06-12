@@ -6,7 +6,7 @@ from pymysql import err
 from flask_login import login_required, current_user
 import os
 import re
-from .form import BaobiaoForm, TianxieForm, QueryForm, excels
+from .form import BaobiaoForm, TianxieForm, QueryForm, PreviewForm
 from pypinyin import lazy_pinyin
 import pyexcel
 from openpyxl import Workbook, load_workbook
@@ -134,6 +134,10 @@ def baobiao_split(cursor, file):
 @login_required
 def fill():
     form = TianxieForm()
+    # 预览填写报表
+    previewform = PreviewForm()
+    previewform.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
+
     username = current_user.username.lower()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
@@ -221,16 +225,28 @@ def fill():
         sqlresult = None
     if request.method == 'GET' and sqlresult is not None:
         conn.close()
-        return render_template("baobiao_tianxie.html", form=form, sqlresult=sqlresult)
+        return render_template("baobiao_tianxie.html", form=form, previewform=previewform, sqlresult=sqlresult)
     elif request.method == 'GET' and sqlresult is None:
         conn.close()
         return render_template("baobiao_tianxie.html", form=form)
     elif request.method == 'POST':
+        # 预览填写报表
+        if previewform.excel.data is not None:
+            FILE_TO_SET = get_baobiao_name()
+            baobiao = FILE_TO_SET[str(previewform.excel.data)]
+            print(baobiao)
+            filedir = os.path.join(pardir, 'Files', 'upload')
+            destdir = os.path.join(pardir, 'templates')
+            pyexcel.save_as(file_name=filedir + '/' + baobiao + '.xlsx',
+                            dest_file_name=destdir + '/preview.handsontable.html')
+            return render_template("preview.handsontable.html")
+
+        # 填写内容
         tianxie = request.form.getlist("values")
         try:
             for i in range(len(tianxie)):
-                baobiao = sqlresult[i][0]
-                gezi = sqlresult[i][1]
+                # baobiao = sqlresult[i][0]
+                # gezi = sqlresult[i][1]
                 content = sqlresult[i][2]
                 value = str(tianxie[i])
                 submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
