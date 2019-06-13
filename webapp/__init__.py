@@ -65,5 +65,7 @@ def create_app(config_name):
     app.register_blueprint(api_blueprint, url_prefix='/api')
     from .baobiao import _baobiao as baobiao_blueprint
     app.register_blueprint(baobiao_blueprint, url_prefix='/baobiao')
-    from .baobiao import _baobiao as baobiao_blueprint
+    from .analyzingreport import _analyzingreport as analyzingreport_blueprint
+    app.register_blueprint(analyzingreport_blueprint, url_prefix='/analyzingreport')
+
     return app

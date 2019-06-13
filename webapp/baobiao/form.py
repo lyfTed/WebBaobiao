@@ -22,6 +22,7 @@ class PreviewForm(FlaskForm):
     excel = SelectField('报表模板', validators=[DataRequired()], coerce=int)
     preview = SubmitField(u'预览报表模板')
 
+
 class GenerateForm(FlaskForm):
     excels = SelectMultipleField('生成报表（可多选）', validators=[DataRequired()], coerce=int)
     generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')

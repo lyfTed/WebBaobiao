@@ -228,7 +228,7 @@ def fill():
         return render_template("baobiao_tianxie.html", form=form, previewform=previewform, sqlresult=sqlresult)
     elif request.method == 'GET' and sqlresult is None:
         conn.close()
-        return render_template("baobiao_tianxie.html", form=form)
+        return render_template("baobiao_tianxie.html", form=form, previewform=previewform)
     elif request.method == 'POST':
         # 预览填写报表
         if previewform.excel.data is not None:

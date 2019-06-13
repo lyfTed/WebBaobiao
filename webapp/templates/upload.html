@@ -7,18 +7,8 @@
 <div class="page-header">
     <h1>上传报表模板</h1>
 </div>
+<div class="col-md-8">
 <h4><b>请选择报表模板（可一次上传多个文件）</b></h4>
-{#<p>#}
-{#	{% with messages = get_flashed_messages() %}#}
-{#	  {% if messages %}#}
-{#		<ul class=flashes>#}
-{#		{% for message in messages %}#}
-{#		  <li>{{ message }}</li>#}
-{#		{% endfor %}#}
-{#		</ul>#}
-{#	  {% endif %}#}
-{#	{% endwith %}#}
-{#</p>#}
     <br>
 <p><b>请先前往管理员主页中的报表名管理，维护报表名，例如：资金期限表、G25......</b></p>
 <p><b>再上传同名文件，仅支持xlsx文件，若要备注请用"_"分割，例如：资金期限表_201804版。</b></p>
@@ -33,6 +23,8 @@
 </p>
 {#    <img src="{{ url_for('static', filename='img/1.png') }}" width="55%" height="55%">#}
     <br>
+</div>
+<div class="col-md-8">
 <form method="post" action="/api/upload_file/" enctype="multipart/form-data">
     <dl>
 		<p>
@@ -45,5 +37,5 @@
 		<input type="submit" class="btn btn-default" value="上传">
 	</p>
 </form>
-
+</div>
 {% endblock %}

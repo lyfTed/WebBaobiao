@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Upload{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>分析型报表</h1>
+    </div>
+
+        <div class="col-md-4">
+            {{ form.csrf_token }}
+            {{ wtf.quick_form(form) }}
+        </div>
+
+    <h4><b>请选择报表模板（可一次上传多个文件）</b></h4>
+
+{% endblock %}
