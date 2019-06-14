@@ -18,7 +18,7 @@ from ..models import BaobiaoToSet
 
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 basedir = os.path.abspath(os.path.dirname(__file__))
-ALLOWED_EXTENSIONS = set(['xlsx'])
+ALLOWED_EXTENSIONS = set(['xlsx', 'xls'])
 
 
 # 用于判断文件后缀
@@ -49,11 +49,35 @@ def get_baobiao_freq():
     return FREQ_OF_FILE
 
 
-@_analyzingreport.route('/')
+@_analyzingreport.route('/', methods=['GET', 'POST'])
 @login_required
 def main():
     form = UploadForm()
-    return render_template('analyzing_report.html', form=form)
+    kemu = form.kemu
+    institution = form.institution
+    currency = form.currency
+    date = form.date
+    if request.method == 'GET':
+        return render_template('analyzing_report.html', form=form)
+    if request.method == 'POST':
+        filedir = os.path.join(pardir, 'Files', 'upload', 'analyzingreport')
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No file selected for uploading')
+            return redirect(request.url)
+        file = request.files.getlist("file")[0]
+        print(file)
+        if file and allowed_file(file.filename):
+            filename = re.split('[_.]', file.filename)[0] + '.xlsx'
+            print(filename)
+            file.save(os.path.join(filedir, filename))
+        flash('科目表上传成功')
+        return redirect('/analyzingreport')
 
 
 

@@ -61,7 +61,6 @@ def upload_file():
     if request.method == 'POST':
         # get current auth
         username = current_user.username
-        # print(username)
         # check if the post request has the file part
         filedir = os.path.join(pardir, 'Files', 'upload')
         if not os.path.exists(filedir):
