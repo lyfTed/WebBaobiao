@@ -25,14 +25,14 @@ class PreviewForm(FlaskForm):
 
 class GenerateForm(FlaskForm):
     excels = SelectMultipleField('生成报表（可多选）', validators=[DataRequired()], coerce=int)
-    generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
+    generatedate = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('生成')
 
 
 class QueryForm(FlaskForm):
     excel = SelectField('报表名', validators=[DataRequired()], coerce=int)
-    generatedate = DateField(u'报表日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
-    lastdate = DateField(u'上期日期（YYYY-MM）', validators=[DataRequired()], format='%Y-%m-%d')
+    generatedate = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
+    lastdate = DateField(u'上期日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('查询结果')
 
 

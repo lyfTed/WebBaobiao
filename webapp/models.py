@@ -28,6 +28,12 @@ class User(UserMixin,  db.Model):
         return check_password_hash(self.password_hash, password)
     ###verify_password方法接受一个参数（密码），将其传给Werkzeug提供的check_password_hash()函数，和储存在User模型中的密码散列值进行对比。密码正确返回True，密码错误返回False。
 
+    def reset_password(self):
+        self.password_hash = generate_password_hash("123456")
+
+    def change_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
     def __repr__(self):
         return '<User %r>' % self.username
 

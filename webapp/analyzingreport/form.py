@@ -16,7 +16,7 @@ class UploadForm(FlaskForm):
     currency = SelectField('币种', validators=[DataRequired()], choices=[(1, 'EUR'), (2, 'GBP'), (3, 'AUD'), (4, 'USD'),
                         (5, 'CAD'), (6, 'SGD'), (7, 'HKD'), (8, 'JPY'), (9, '外币折人民币'), (10, '外币折美元'),
                         (11, '本外币折人民币')], default=9, coerce=int)
-    date = DateField(u'报表日期（YYYY-MM-DD）', validators=[DataRequired()], format='%Y-%m-%d')
+    date = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('上传')
 
 
@@ -28,7 +28,7 @@ class QueryForm(FlaskForm):
                                                                        (5, 'CAD'), (6, 'SGD'), (7, 'HKD'), (8, 'JPY'),
                                                                        (9, '外币折人民币'), (10, '外币折美元'),
                                                                        (11, '本外币折人民币')], default=9, coerce=int)
-    date = DateField(u'报表日期（YYYY-MM-DD）', validators=[DataRequired()], format='%Y-%m-%d')
+    date = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('上传')
 
 
