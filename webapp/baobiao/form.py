@@ -5,6 +5,7 @@ from wtforms.fields.html5 import DateField
 ###从WTForms包中导入字段类
 from wtforms.validators import DataRequired, Length
 from flask_wtf.file import FileField, FileAllowed, FileRequired
+from datetime import datetime, date, timedelta
 from .. import excels
 
 
@@ -25,14 +26,17 @@ class PreviewForm(FlaskForm):
 
 class GenerateForm(FlaskForm):
     excels = SelectMultipleField('生成报表（可多选）', validators=[DataRequired()], coerce=int)
-    generatedate = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('生成')
 
 
 class QueryForm(FlaskForm):
     excel = SelectField('报表名', validators=[DataRequired()], coerce=int)
-    generatedate = DateField(u'报表日期', validators=[DataRequired()], format='%Y-%m-%d')
-    lastdate = DateField(u'上期日期', validators=[DataRequired()], format='%Y-%m-%d')
+    query1 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    query2 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=35)).strftime("%Y/%m"))
+    query3 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=70)).strftime("%Y/%m"))
+    query4 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=100)).strftime("%Y/%m"))
+    query5 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=130)).strftime("%Y/%m"))
+    generatedate = DateField(u'自定义选择日期', validators=[DataRequired()], format='%Y-%m-%d')
     submit = SubmitField('查询结果')
 
 

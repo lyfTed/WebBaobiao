@@ -1,6 +1,8 @@
 # _*_ coding: utf-8 _*_
 from . import _baobiao
 
+import codecs
+import pandas as pd
 from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
 from pymysql import err
 from flask_login import login_required, current_user
@@ -237,9 +239,14 @@ def fill():
             print(baobiao)
             filedir = os.path.join(pardir, 'Files', 'upload')
             destdir = os.path.join(pardir, 'templates')
-            pyexcel.save_as(file_name=filedir + '/' + baobiao + '.xlsx',
-                            dest_file_name=destdir + '/preview.handsontable.html')
-            return render_template("preview.handsontable.html")
+            # pyexcel.save_as(file_name=filedir + '/' + baobiao + '.xlsx',
+            #                 dest_file_name=destdir + '/preview.handsontable.html')
+            xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
+            pd.set_option('display.max_colwidth', 1000)
+            df = xd.parse()
+            with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
+                html_file.write(df.to_html(header=True, index=True, na_rep=''))
+            return render_template("preview.html")
 
         # 填写内容
         tianxie = request.form.getlist("values")
@@ -275,15 +282,16 @@ def generate():
     form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     FILE_TO_SET = get_baobiao_name()
     generatelist = request.values.getlist('excels')
-    generatedate = request.values.get('generatedate')
     filedir = os.path.join(pardir, 'Files', 'generate')
     if not os.path.exists(filedir):
         os.mkdir(filedir)
     if generatelist == []:
         return render_template('generate.html', form=form)
     else:
-        # print(generatedate)
-        generatedate = generatedate.replace('-', '_')
+        lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+        lastmonth = lastmonthend.strftime("%Y_%m_%d")
+        print(lastmonth)
+        generatedate = lastmonth
         allcomplete = True
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_SET[generatefile]
@@ -449,22 +457,7 @@ def query():
         filedir = os.path.join(pardir, 'Files', 'Generate', baobiao)
         destdir = os.path.join(pardir, 'templates')
         ######
-        # handsontable 的html有点问题，换一种excel存储为html的方式
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_generate + '.xlsx', dest_file_name=destdir+'/query_report.handsontable.html')
-        pyexcel.save_as(file_name=filedir + '/' + baobiao_last + '.xlsx', dest_file_name=destdir+'/last_report.handsontable.html')
 
-        ######
-        #### https://stackoverflow.com/questions/13407744/excel-how-to-find-the-default-file-extension
-        # # 保存成html来预览
-        # xlApp = EnsureDispatch("Excel.Application")
-        # xlApp.Visible = False
-        # xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_generate + '.xlsx')
-        # xlBook.SaveAs(destdir+'/query_report/query_report.html', constants.xlHtml)
-        # xlBook.Close()
-        # xlBook = xlApp.Workbooks.Open(filedir + '/' + baobiao_last + '.xlsx')
-        # xlBook.SaveAs(destdir+'/last_report/last_report.html', constants.xlHtml)
-        # xlBook.Close()
-        # xlApp.Quit()
         result = baobiao_compare(baobiao, generatedate, lastdate)
         return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
 
