@@ -48,6 +48,17 @@ def get_baobiao_freq():
     return FREQ_OF_FILE
 
 
+def get_baobiao_auditor():
+    result = BaobiaoToSet.query.order_by(BaobiaoToSet.id).all()
+    AUDITOR_OF_FILE = {}
+    for i in range(len(result)):
+        rs = str(result[i]).split(',')
+        file = str(rs[0].strip('"').strip("'"))
+        auditor = str(rs[2].strip('"').strip("'"))
+        AUDITOR_OF_FILE[file] = auditor
+    return AUDITOR_OF_FILE
+
+
 @_baobiao.route('/split/')
 @login_required
 def split():
@@ -279,6 +290,9 @@ def generate():
     form = GenerateForm()
     form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     FILE_TO_SET = get_baobiao_name()
+    AUDITOR_OF_FILE = get_baobiao_auditor()
+    print(AUDITOR_OF_FILE)
+
     generatelist = request.values.getlist('excels')
     filedir = os.path.join(pardir, 'Files', 'generate')
     if not os.path.exists(filedir):

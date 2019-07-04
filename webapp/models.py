@@ -60,6 +60,8 @@ class BaobiaoToSet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     file = db.Column(db.String(100), unique=True, index=True)
     freq = db.Column(db.String(10))
+    auditor = db.Column(db.String(20), db.ForeignKey('users.username'))
+    # auditor = db.Column(db.String(20))
 
     def __repr__(self):
-        return '%r,%r' % (self.file, self.freq)
+        return '%r,%r,%r' % (self.file, self.freq, self.auditor)

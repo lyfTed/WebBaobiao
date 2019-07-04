@@ -59,7 +59,7 @@ class MyBaobiaoView(ModelView):
     can_edit = True
     can_delete = True
     # Override displayed fields
-    column_list = ('id', 'file', 'freq')
+    column_list = ('id', 'file', 'freq', 'auditor')
 
     form = BaobiaoTeSetForm
 

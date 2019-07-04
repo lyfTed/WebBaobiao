@@ -6,3 +6,4 @@ class BaobiaoTeSetForm(BaseForm):
     id = StringField()
     file = StringField()
     freq = StringField()
+    auditor = StringField()
