@@ -32,12 +32,12 @@ class GenerateForm(FlaskForm):
 class QueryForm(FlaskForm):
     excel = SelectField('报表名', validators=[DataRequired()], coerce=int)
     query1 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    query2 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=35)).strftime("%Y/%m"))
-    query3 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=70)).strftime("%Y/%m"))
-    query4 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=100)).strftime("%Y/%m"))
-    query5 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=130)).strftime("%Y/%m"))
-    generatedate = DateField(u'自定义选择日期', validators=[DataRequired()], format='%Y-%m-%d')
-    submit = SubmitField('查询结果')
+    query2 = SubmitField((date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    query3 = SubmitField((date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    query4 = SubmitField((date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    query5 = SubmitField((date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    generatedate = DateField(u'自选日期', format='%Y-%m-%d')
+    submit = SubmitField('查询自选日期')
 
 
 

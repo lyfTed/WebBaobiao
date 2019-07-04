@@ -13,7 +13,7 @@ from pypinyin import lazy_pinyin
 import pyexcel
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import numbers
-from win32com.client.gencache import EnsureDispatch
+import win32com.client as win32
 from datetime import datetime, date, timedelta
 from win32com.client import Dispatch, constants
 from .form import GenerateForm, excels
@@ -239,8 +239,6 @@ def fill():
             print(baobiao)
             filedir = os.path.join(pardir, 'Files', 'upload')
             destdir = os.path.join(pardir, 'templates')
-            # pyexcel.save_as(file_name=filedir + '/' + baobiao + '.xlsx',
-            #                 dest_file_name=destdir + '/preview.handsontable.html')
             xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
             pd.set_option('display.max_colwidth', 1000)
             df = xd.parse()
@@ -420,7 +418,9 @@ def generateFile(filetogenerate_chinese, generatedate):
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值，最后再存为html用于预览
     #### https://www.cnblogs.com/vhills/p/8327918.html
-    xlApp = EnsureDispatch("Excel.Application")
+    print('Begin dispatch')
+    xlApp = win32.Dispatch("Excel.Application")
+    print('End dispatch')
     xlApp.Visible = False
     xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     xlBook.Save()
@@ -433,13 +433,24 @@ def generateFile(filetogenerate_chinese, generatedate):
     #     sheet = wb.get_sheet_by_name(sheetnames[i])
     #     wb.remove_sheet(sheet)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    print(alertset)
     return alertset
+
+
+def exceltohtml(baobiao, querydt, output):
+    filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
+    destdir = os.path.join(pardir, 'templates')
+    xd = pd.ExcelFile(filedir + '/' + baobiao + querydt + '.xlsx')
+    pd.set_option('display.max_colwidth', 1000)
+    df = xd.parse()
+    with codecs.open(destdir + '/' + output + '.html', 'w', encoding='utf-8') as html_file:
+        html_file.write(df.to_html(header=True, index=True, na_rep=''))
 
 
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def query():
-    pythoncom.CoInitialize()
+    # pythoncom.CoInitialize()
     form = QueryForm()
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     if request.method == 'GET':
@@ -447,19 +458,51 @@ def query():
     else:
         FILE_TO_SET = get_baobiao_name()
         baobiao = FILE_TO_SET[str(form.excel.data)]
-        baobiao = "".join(lazy_pinyin(baobiao))
-        generatedate = request.values.get('generatedate')
-        generatedate = generatedate.replace('-', '_')
-        lastdate = request.values.get('lastdate')
-        lastdate = lastdate.replace('-', '_')
-        baobiao_generate = baobiao + '_' + generatedate
-        baobiao_last = baobiao + '_' + lastdate
-        filedir = os.path.join(pardir, 'Files', 'Generate', baobiao)
-        destdir = os.path.join(pardir, 'templates')
-        ######
-
-        result = baobiao_compare(baobiao, generatedate, lastdate)
-        return render_template("baobiao_query_result.html", form=form, result=result, baobiao=baobiao)
+        # baobiao = "".join(lazy_pinyin(baobiao))
+        if form.query1.data:
+            try:
+                querydt = (date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+                exceltohtml(baobiao, querydt, 'query1')
+                return render_template("query1.html")
+            except:
+                flash('所选报表尚未生成')
+        elif form.query2.data:
+            try:
+                querydt = (date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+                exceltohtml(baobiao, querydt, 'query2')
+                return render_template("query2.html")
+            except:
+                flash('所选报表尚未生成')
+        elif form.query3.data:
+            try:
+                querydt = (date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+                exceltohtml(baobiao, querydt, 'query3')
+                return render_template("query3.html")
+            except:
+                flash('所选报表尚未生成')
+        elif form.query4.data:
+            try:
+                querydt = (date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+                exceltohtml(baobiao, querydt, 'query4')
+                return render_template("query4.html")
+            except:
+                flash('所选报表尚未生成')
+        elif form.query5.data:
+            try:
+                querydt = (date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+                exceltohtml(baobiao, querydt, 'query5')
+                return render_template("query5.html")
+            except:
+                flash('所选报表尚未生成')
+        elif form.submit.data:
+            generatedate = request.values.get('generatedate')
+            generatedate = '_' + generatedate.replace('-', '_')
+            try:
+                exceltohtml(baobiao, generatedate, 'query')
+                return render_template("query.html")
+            except:
+                flash('所选报表尚未生成')
+        return redirect('/baobiao/query/')
 
 
 def baobiao_compare(baobiao, generatedate, lastdate):
@@ -509,15 +552,3 @@ def baobiao_compare(baobiao, generatedate, lastdate):
     return changedict
 
 
-@_baobiao.route('/query/generate', methods=['GET', 'POST'])
-@login_required
-def show_generate_baobiao():
-    # return send_file(os.path.join(pardir, "templates", "query_report", "query_report.html"))
-    # return render_template("query_report.html")
-    return render_template("query_report.handsontable.html")
-
-
-@_baobiao.route('/query/last', methods=['GET', 'POST'])
-@login_required
-def show_last_baobiao():
-    return render_template("last_report.handsontable.html")

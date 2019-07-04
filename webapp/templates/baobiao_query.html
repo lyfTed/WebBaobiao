@@ -7,12 +7,9 @@
 <div class="page-header">
     <h1>查询报表</h1>
 </div>
-<div class="col-md-4">
+<form class="form" method="post" target="_blank">
+<div class="col-md-6">
     {{ wtf.quick_form(form) }}
 </div>
-<div class="form-group">
-    <button onclick="window.open('this')" type="button" class="btn btn-info">预览这期报表</button>
-    &nbsp;&nbsp;
-    <button onclick="window.open('last')" type="button" class="btn btn-info">预览上期报表</button>
-</div>
+</form>
 {% endblock %}
