@@ -32,7 +32,6 @@ def get_baobiao_name():
     for i in range(len(result)):
         rs = str(result[i]).split(',')
         file = str(rs[0].strip('"').strip("'"))
-        freq = str(rs[1].strip('"').strip("'"))
         FILE_TO_SET[str(i+1)] = file
     return FILE_TO_SET
 
@@ -62,6 +61,7 @@ def get_baobiao_auditor():
 @_baobiao.route('/split/')
 @login_required
 def split():
+    FILE_TO_SET = get_baobiao_name()
     form = BaobiaoForm()
     form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     conn.ping(reconnect=True)
@@ -71,10 +71,18 @@ def split():
     if filetosetlist == []:
         return render_template("baobiao.html", form=form)
     else:
+        split_fail_list = []
         for file in filetosetlist:
-            baobiao_split(cursor, file)
-            conn.commit()
-        flash('Baobiao(s) Successfully Splitted')
+            try:
+                baobiao_split(cursor, file)
+                conn.commit()
+            except:
+                split_fail_list.append(FILE_TO_SET[file])
+        if len(split_fail_list) == 0:
+            flash('所有所选报表拆分成功')
+        else:
+            flash('以下报表未上传模板拆分失败 ' + '，'.join(split_fail_list))
+            flash('其他所选报表拆分成功')
         conn.close()
         return render_template('baobiao.html', form=form)
 
@@ -244,19 +252,21 @@ def fill():
         return render_template("baobiao_tianxie.html", form=form, previewform=previewform)
     elif request.method == 'POST':
         # 预览填写报表
-        if previewform.excel.data is not None:
-            FILE_TO_SET = get_baobiao_name()
-            baobiao = FILE_TO_SET[str(previewform.excel.data)]
-            print(baobiao)
-            filedir = os.path.join(pardir, 'Files', 'upload')
-            destdir = os.path.join(pardir, 'templates')
-            xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
-            pd.set_option('display.max_colwidth', 1000)
-            df = xd.parse()
-            with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
-                html_file.write(df.to_html(header=True, index=True, na_rep=''))
-            return render_template("preview.html")
-
+        if previewform.preview.data:
+            try:
+                FILE_TO_SET = get_baobiao_name()
+                baobiao = FILE_TO_SET[str(previewform.excel.data)]
+                filedir = os.path.join(pardir, 'Files', 'upload')
+                destdir = os.path.join(pardir, 'templates')
+                xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
+                pd.set_option('display.max_colwidth', 1000)
+                df = xd.parse()
+                with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
+                    html_file.write(df.to_html(header=True, index=True, na_rep=''))
+                return render_template("preview.html")
+            except:
+                flash('该报表模板尚未上传，请联系管理员上传')
+                return redirect('/baobiao/fill')
         # 填写内容
         tianxie = request.form.getlist("values")
         try:
@@ -288,10 +298,19 @@ def fill():
 @login_required
 def generate():
     form = GenerateForm()
-    form.excels.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
+    lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+    lastm = lastmonthend.strftime(("%m"))
+    generate_choice_list = []
+    for a in BaobiaoToSet.query.all():
+        if a.auditor == current_user.username or current_user.username.lower() == 'admin':
+            if lastm in ["01", "02", "04", "05", "07", "08", "10", "11"] and a.freq == 'M':
+                generate_choice_list.append((a.id, a.file))
+            elif lastm in ["03", "09"] and (a.freq == 'M' or a.freq == 'Q'):
+                generate_choice_list.append((a.id, a.file))
+            elif lastm in ["06", "12"]:
+                generate_choice_list.append((a.id, a.file))
+    form.excels.choices = generate_choice_list
     FILE_TO_SET = get_baobiao_name()
-    AUDITOR_OF_FILE = get_baobiao_auditor()
-    print(AUDITOR_OF_FILE)
 
     generatelist = request.values.getlist('excels')
     filedir = os.path.join(pardir, 'Files', 'generate')
@@ -305,17 +324,23 @@ def generate():
         print(lastmonth)
         generatedate = lastmonth
         allcomplete = True
+        generate_fail_list = []
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_SET[generatefile]
-            alert = generateFile(filetogenerate_chinese, generatedate)
-            if len(alert) != 0:
-                allcomplete = False
-                alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
-                flash('以下用户还未完成对应报表：' + alertmsg)
+            try:
+                alert = generateFile(filetogenerate_chinese, generatedate)
+                if 'alert' in locals() and len(alert) != 0:
+                    allcomplete = False
+                    alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
+                    flash('以下用户还未完成对应报表：' + alertmsg)
+            except:
+                generate_fail_list.append(filetogenerate_chinese)
+        if len(generate_fail_list) != 0:
+            flash('以下报表生成失败，可能是管理员尚未上传模板：' + ','.join(generate_fail_list))
         if allcomplete:
-            flash('报表生成成功')
+            flash('其他所选报表生成成功')
         else:
-            flash('报表生成成功但数据还未完整')
+            flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整')
         return render_template('generate.html', form=form)
 
 
@@ -467,7 +492,14 @@ def query():
     # pythoncom.CoInitialize()
     form = QueryForm()
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
+    FILE_TO_SET = get_baobiao_name()
+    FREQ_OF_FILE = get_baobiao_freq()
     if request.method == 'GET':
+        baobiao = FILE_TO_SET[str(form.excel.data)]
+        freq = FREQ_OF_FILE[baobiao]
+        print(freq)
+        form.query1.label.text = 'ABCD'
+
         return render_template("baobiao_query.html", form=form)
     else:
         FILE_TO_SET = get_baobiao_name()

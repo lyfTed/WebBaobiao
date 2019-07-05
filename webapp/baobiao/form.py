@@ -4,6 +4,7 @@ from wtforms import SubmitField, SelectField,  SelectMultipleField, StringField,
 from wtforms.fields.html5 import DateField
 ###从WTForms包中导入字段类
 from wtforms.validators import DataRequired, Length
+from wtforms import widgets
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from datetime import datetime, date, timedelta
 from .. import excels
@@ -30,8 +31,9 @@ class GenerateForm(FlaskForm):
 
 
 class QueryForm(FlaskForm):
-    excel = SelectField('报表名', validators=[DataRequired()], coerce=int)
-    query1 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("%Y/%m"))
+    excel = SelectField('报表名', validators=[DataRequired()], coerce=int, default=1)
+    query1 = SubmitField()
+    # query1 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("%Y/%m"))
     query2 = SubmitField((date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("%Y/%m"))
     query3 = SubmitField((date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("%Y/%m"))
     query4 = SubmitField((date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("%Y/%m"))
