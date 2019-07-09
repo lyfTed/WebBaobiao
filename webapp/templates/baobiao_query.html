@@ -8,8 +8,55 @@
     <h1>查询报表</h1>
 </div>
 <form class="form" method="post" target="_blank">
-<div class="col-md-6">
+<div class="col-md-4">
     {{ wtf.quick_form(form) }}
 </div>
 </form>
 {% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script charset="utf-8" type="text/javascript">
+
+$(function() {
+
+    // jQuery selection for the 2 select boxes
+    var dropdown = {
+        excel: $('#select_excel'),
+        querydate: $('#select_query_date')
+    };
+
+    // call to update on load
+    updateQueryDates();
+
+    // function to call XHR and update county dropdown
+    function updateQueryDates() {
+        var send = {
+            excel: dropdown.excel.val()
+        };
+        dropdown.querydate.attr('disabled', 'disabled');
+        dropdown.querydate.empty();
+        $.getJSON("{{ url_for('baobiao._get_freq') }}", send, function(data) {
+            data.forEach(function(item) {
+                dropdown.querydate.append(
+                    $('<option>', {
+                        value: item[0],
+                        text: item[1]
+                    })
+                );
+            });
+            dropdown.querydate.removeAttr('disabled');
+        });
+    }
+
+    // event listener to state dropdown change
+    dropdown.excel.on('change', function () {
+    {#$('#select_excel').change(function () {#}
+        updateQueryDates();
+    });
+
+});
+
+</script>
+{% endblock %}
+

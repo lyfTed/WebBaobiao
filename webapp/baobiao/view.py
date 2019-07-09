@@ -3,7 +3,7 @@ from . import _baobiao
 
 import codecs
 import pandas as pd
-from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file
+from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file, url_for, jsonify
 from pymysql import err
 from flask_login import login_required, current_user
 import os
@@ -490,65 +490,99 @@ def exceltohtml(baobiao, querydt, output):
 @login_required
 def query():
     # pythoncom.CoInitialize()
-    form = QueryForm()
+    form = QueryForm(form_name='QueryForm')
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
+    form.querydate.choices = [(a.id, a.freq) for a in BaobiaoToSet.query.all()]
     FILE_TO_SET = get_baobiao_name()
     FREQ_OF_FILE = get_baobiao_freq()
     if request.method == 'GET':
-        baobiao = FILE_TO_SET[str(form.excel.data)]
-        freq = FREQ_OF_FILE[baobiao]
-        print(freq)
-        form.query1.label.text = 'ABCD'
-
         return render_template("baobiao_query.html", form=form)
-    else:
-        FILE_TO_SET = get_baobiao_name()
-        baobiao = FILE_TO_SET[str(form.excel.data)]
-        # baobiao = "".join(lazy_pinyin(baobiao))
-        if form.query1.data:
-            try:
-                querydt = (date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-                exceltohtml(baobiao, querydt, 'query1')
-                return render_template("query1.html")
-            except:
-                flash('所选报表尚未生成')
-        elif form.query2.data:
-            try:
-                querydt = (date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-                exceltohtml(baobiao, querydt, 'query2')
-                return render_template("query2.html")
-            except:
-                flash('所选报表尚未生成')
-        elif form.query3.data:
-            try:
-                querydt = (date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-                exceltohtml(baobiao, querydt, 'query3')
-                return render_template("query3.html")
-            except:
-                flash('所选报表尚未生成')
-        elif form.query4.data:
-            try:
-                querydt = (date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-                exceltohtml(baobiao, querydt, 'query4')
-                return render_template("query4.html")
-            except:
-                flash('所选报表尚未生成')
-        elif form.query5.data:
-            try:
-                querydt = (date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-                exceltohtml(baobiao, querydt, 'query5')
-                return render_template("query5.html")
-            except:
-                flash('所选报表尚未生成')
-        elif form.submit.data:
-            generatedate = request.values.get('generatedate')
-            generatedate = '_' + generatedate.replace('-', '_')
-            try:
-                exceltohtml(baobiao, generatedate, 'query')
-                return render_template("query.html")
-            except:
-                flash('所选报表尚未生成')
-        return redirect('/baobiao/query/')
+    if form.validate_on_submit() and request.form['form_name'] == 'QueryForm':
+        print(form.querydate.data)
+        flash('excel: %s' % form.excel.data)
+    return redirect(url_for('baobiao.query'))
+
+
+def cal_former_month(dt, N, freq):
+    dtlist = []
+    year = dt.year
+    month = dt.month
+    for i in range(N):
+        if month == 1:
+            year -= 1
+            month = 12
+        else:
+            month -= 1
+        if freq == 'M':
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
+        if freq == 'Q' and (i+1) % 3 == 0:
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
+        if freq == 'H' and (i+1) % 6 == 0:
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
+    return(dtlist)
+
+
+@_baobiao.route('/_get_freq/')
+def _get_freq():
+    FILE_TO_SET = get_baobiao_name()
+    FREQ_OF_FILE = get_baobiao_freq()
+    excel = request.args.get('excel', '1', type=int)
+    freq = FREQ_OF_FILE[FILE_TO_SET[str(excel)]]
+    query_dt = cal_former_month(date.today(), 30, freq)[0:5]
+    query_dt = [(i+1, query_dt[i]) for i in range(5)]
+    print(query_dt)
+    return jsonify(query_dt)
+
+
+    # else:
+    #     baobiao = FILE_TO_SET[str(form.excel.data)]
+    #     freq = FREQ_OF_FILE[baobiao]
+    #
+    #     # baobiao = "".join(lazy_pinyin(baobiao))
+    #     if form.query1.data:
+    #         try:
+    #             querydt = (date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+    #             exceltohtml(baobiao, querydt, 'query1')
+    #             return render_template("query1.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     elif form.query2.data:
+    #         try:
+    #             querydt = (date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+    #             exceltohtml(baobiao, querydt, 'query2')
+    #             return render_template("query2.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     elif form.query3.data:
+    #         try:
+    #             querydt = (date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+    #             exceltohtml(baobiao, querydt, 'query3')
+    #             return render_template("query3.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     elif form.query4.data:
+    #         try:
+    #             querydt = (date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+    #             exceltohtml(baobiao, querydt, 'query4')
+    #             return render_template("query4.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     elif form.query5.data:
+    #         try:
+    #             querydt = (date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
+    #             exceltohtml(baobiao, querydt, 'query5')
+    #             return render_template("query5.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     elif form.submit.data:
+    #         generatedate = request.values.get('generatedate')
+    #         generatedate = '_' + generatedate.replace('-', '_')
+    #         try:
+    #             exceltohtml(baobiao, generatedate, 'query')
+    #             return render_template("query.html")
+    #         except:
+    #             flash('所选报表尚未生成')
+    #     return redirect('/baobiao/query/')
 
 
 def baobiao_compare(baobiao, generatedate, lastdate):

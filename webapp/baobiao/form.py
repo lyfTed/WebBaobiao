@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 ###从Flask-WTF扩展导入Form基类
-from wtforms import SubmitField, SelectField,  SelectMultipleField, StringField, FloatField
+from wtforms import SubmitField, SelectField,  SelectMultipleField, StringField, FloatField, HiddenField
 from wtforms.fields.html5 import DateField
 ###从WTForms包中导入字段类
 from wtforms.validators import DataRequired, Length
@@ -31,15 +31,11 @@ class GenerateForm(FlaskForm):
 
 
 class QueryForm(FlaskForm):
-    excel = SelectField('报表名', validators=[DataRequired()], coerce=int, default=1)
-    query1 = SubmitField()
-    # query1 = SubmitField((date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    query2 = SubmitField((date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    query3 = SubmitField((date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    query4 = SubmitField((date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    query5 = SubmitField((date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("%Y/%m"))
-    generatedate = DateField(u'自选日期', format='%Y-%m-%d')
-    submit = SubmitField('查询自选日期')
+    form_name = HiddenField('Form Name')
+    excel = SelectField('报表名', validators=[DataRequired()], coerce=int, default=1, id='select_excel')
+    querydate = SelectField('查询日期', validators=[DataRequired()], coerce=int, default=1, id='select_query_date')
+    customizeddate = DateField(u'或自选日期', format='%Y-%m-%d')
+    submit = SubmitField('查询')
 
 
 
