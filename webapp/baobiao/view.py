@@ -20,6 +20,7 @@ from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
+import gc
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -81,8 +82,9 @@ def split():
         if len(split_fail_list) == 0:
             flash('所有所选报表拆分成功')
         else:
-            flash('以下报表未上传模板拆分失败 ' + '，'.join(split_fail_list))
-            flash('其他所选报表拆分成功')
+            flash('以下报表未上传模板，拆分失败 ' + '，'.join(split_fail_list))
+            if len(filetosetlist) != len(split_fail_list):
+                flash('其他所选报表拆分成功')
         conn.close()
         return render_template('baobiao.html', form=form)
 
@@ -337,7 +339,7 @@ def generate():
                 generate_fail_list.append(filetogenerate_chinese)
         if len(generate_fail_list) != 0:
             flash('以下报表生成失败，可能是管理员尚未上传模板：' + ','.join(generate_fail_list))
-        if allcomplete:
+        if allcomplete and len(generate_fail_list) != len(generatelist):
             flash('其他所选报表生成成功')
         else:
             flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整')
@@ -458,7 +460,7 @@ def generateFile(filetogenerate_chinese, generatedate):
     # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值，最后再存为html用于预览
     #### https://www.cnblogs.com/vhills/p/8327918.html
     print('Begin dispatch')
-    xlApp = win32.Dispatch("Excel.Application")
+    xlApp = win32.DispatchEx("Excel.Application")
     print('End dispatch')
     xlApp.Visible = False
     xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
@@ -472,14 +474,19 @@ def generateFile(filetogenerate_chinese, generatedate):
     #     sheet = wb.get_sheet_by_name(sheetnames[i])
     #     wb.remove_sheet(sheet)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    del wb
+    gc.collect()
     print(alertset)
+    if len(alertset) != 0 and os.path.exists(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx'):
+        print('有用户尚未填写，删除生成的excel')
+        os.remove(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
     return alertset
 
 
 def exceltohtml(baobiao, querydt, output):
     filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
     destdir = os.path.join(pardir, 'templates')
-    xd = pd.ExcelFile(filedir + '/' + baobiao + querydt + '.xlsx')
+    xd = pd.ExcelFile(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
     pd.set_option('display.max_colwidth', 1000)
     df = xd.parse()
     with codecs.open(destdir + '/' + output + '.html', 'w', encoding='utf-8') as html_file:
@@ -494,12 +501,20 @@ def query():
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     form.querydate.choices = [(a.id, a.freq) for a in BaobiaoToSet.query.all()]
     FILE_TO_SET = get_baobiao_name()
-    FREQ_OF_FILE = get_baobiao_freq()
     if request.method == 'GET':
         return render_template("baobiao_query.html", form=form)
-    if form.validate_on_submit() and request.form['form_name'] == 'QueryForm':
-        print(form.querydate.data)
-        flash('excel: %s' % form.excel.data)
+    if request.form['form_name'] == 'QueryForm':
+        baobiao = FILE_TO_SET[str(form.excel.data)]
+        if form.customizeddate.data is not None:
+            querydt = request.values.get('customizeddate')
+            querydt = querydt.replace('-', '/')
+        else:
+            querydt = form.querydate.data
+        try:
+            exceltohtml(baobiao, querydt, 'query')
+            return render_template("query.html")
+        except:
+            flash('所选报表尚未生成')
     return redirect(url_for('baobiao.query'))
 
 
@@ -508,17 +523,17 @@ def cal_former_month(dt, N, freq):
     year = dt.year
     month = dt.month
     for i in range(N):
+        if freq == 'M':
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
+        if freq == 'Q' and i % 3 == 0:
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
+        if freq == 'H' and i % 6 == 0:
+            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
         if month == 1:
             year -= 1
             month = 12
         else:
             month -= 1
-        if freq == 'M':
-            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
-        if freq == 'Q' and (i+1) % 3 == 0:
-            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
-        if freq == 'H' and (i+1) % 6 == 0:
-            dtlist.append((date(year, month, 1) - timedelta(days=1)).strftime("%Y/%m/%d"))
     return(dtlist)
 
 
@@ -526,109 +541,9 @@ def cal_former_month(dt, N, freq):
 def _get_freq():
     FILE_TO_SET = get_baobiao_name()
     FREQ_OF_FILE = get_baobiao_freq()
-    excel = request.args.get('excel', '1', type=int)
+    excel = request.args.get('excel', default=None, type=int)
     freq = FREQ_OF_FILE[FILE_TO_SET[str(excel)]]
     query_dt = cal_former_month(date.today(), 30, freq)[0:5]
-    query_dt = [(i+1, query_dt[i]) for i in range(5)]
-    print(query_dt)
+    query_dt = [(query_dt[i], query_dt[i]) for i in range(5)]
     return jsonify(query_dt)
-
-
-    # else:
-    #     baobiao = FILE_TO_SET[str(form.excel.data)]
-    #     freq = FREQ_OF_FILE[baobiao]
-    #
-    #     # baobiao = "".join(lazy_pinyin(baobiao))
-    #     if form.query1.data:
-    #         try:
-    #             querydt = (date(date.today().year, date.today().month, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-    #             exceltohtml(baobiao, querydt, 'query1')
-    #             return render_template("query1.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     elif form.query2.data:
-    #         try:
-    #             querydt = (date(date.today().year, date.today().month-1, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-    #             exceltohtml(baobiao, querydt, 'query2')
-    #             return render_template("query2.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     elif form.query3.data:
-    #         try:
-    #             querydt = (date(date.today().year, date.today().month-2, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-    #             exceltohtml(baobiao, querydt, 'query3')
-    #             return render_template("query3.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     elif form.query4.data:
-    #         try:
-    #             querydt = (date(date.today().year, date.today().month-3, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-    #             exceltohtml(baobiao, querydt, 'query4')
-    #             return render_template("query4.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     elif form.query5.data:
-    #         try:
-    #             querydt = (date(date.today().year, date.today().month-4, 1) - timedelta(days=1)).strftime("_%Y_%m_%d")
-    #             exceltohtml(baobiao, querydt, 'query5')
-    #             return render_template("query5.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     elif form.submit.data:
-    #         generatedate = request.values.get('generatedate')
-    #         generatedate = '_' + generatedate.replace('-', '_')
-    #         try:
-    #             exceltohtml(baobiao, generatedate, 'query')
-    #             return render_template("query.html")
-    #         except:
-    #             flash('所选报表尚未生成')
-    #     return redirect('/baobiao/query/')
-
-
-def baobiao_compare(baobiao, generatedate, lastdate):
-    baobiao_generate = "".join(lazy_pinyin(baobiao + '_' + generatedate.replace('-', '_')))
-    baobiao_last = "".join(lazy_pinyin(baobiao + '_' + lastdate.replace('-', '_')))
-    conn.ping(reconnect=True)
-    cursor = conn.cursor()
-    # this term baobiao
-    sql = 'select distinct position, content, content_formula from ' + baobiao_generate + ' where editable=True;'
-    cursor.execute(sql)
-    conn.commit()
-    sqlresult_generate = cursor.fetchall()
-    result_generate = dict((x, [z, y]) for x, y, z in sqlresult_generate)
-    # print(result_generate)
-    # last term baobiao
-    sql = 'select distinct position, content from ' + baobiao_last + ' where editable=True;'
-    cursor.execute(sql)
-    conn.commit()
-    sqlresult_last = cursor.fetchall()
-    result_last= dict((x, y) for x, y in sqlresult_last)
-    changedict = {}
-    for key in result_generate:
-        try:
-            value_explain = result_generate.get(key)[0].split('|')
-            value_explain = "，".join(value_explain).lstrip('，')
-            value_generate = result_generate.get(key)[1]
-            value_last = result_last.get(key)
-            # print(value_generate)
-            print(value_last)
-            if float(value_last) != 0:
-                pctchange = float(value_generate) / float(value_last) - 1
-                show_result = str(round(pctchange * 100, 2)) + '%'
-            else:
-                pctchange = None
-                show_result = 'Cannot Compare Percentage Change'
-            changedict[key] = [value_explain, value_last, value_generate, show_result, pctchange]
-            print(pctchange)
-        except KeyError:
-            print('No key in last table')
-            value_generate = result_generate.get(key)
-            value_last = None
-            pctchange = None
-            changedict[key] = [value_explain, value_last, value_generate, None, pctchange]
-        finally:
-            pass
-    # print(changedict)
-    return changedict
-
 

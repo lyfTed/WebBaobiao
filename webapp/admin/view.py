@@ -9,7 +9,7 @@ from .form import BaobiaoTeSetForm
 # 定制一个页面，用自己的模板（仅仅是页面）然后再程序中加入代码 admin.add_view(MyNews(name=u'发表新闻'))
 class MyAdminView(BaseView):
     def is_accessible(self):
-        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+        if current_user.is_authenticated and (current_user.username.lower() == 'admin' or 'luyifan'):
             return True
         return False
 
@@ -20,7 +20,7 @@ class MyAdminView(BaseView):
 
 class MyBaseView(BaseView):
     def is_accessible(self):
-        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+        if current_user.is_authenticated and (current_user.username.lower() == 'admin' or 'luyifan'):
             return True
         return False
 
@@ -32,7 +32,7 @@ class MyBaseView(BaseView):
 # 管理数据库表，设置表显示哪些字段
 class MyUserView(ModelView):
     def is_accessible(self):
-        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+        if current_user.is_authenticated and (current_user.username.lower() == 'admin' or 'luyifan'):
             return True
         return False
 
@@ -50,7 +50,7 @@ class MyUserView(ModelView):
 
 class MyBaobiaoView(ModelView):
     def is_accessible(self):
-        if current_user.is_authenticated and current_user.username.lower() == 'admin':
+        if current_user.is_authenticated and (current_user.username.lower() == 'admin' or 'luyifan'):
             return True
         return False
 

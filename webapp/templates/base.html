@@ -38,7 +38,8 @@
                         <span class="icon-bar"></span>
                     </button>
                     <ul class="nav navbar-brand">
-                        {% if current_user.is_authenticated and current_user.username.lower()=='admin' %}
+                        {% if current_user.is_authenticated and (current_user.username.lower()=='admin' or
+                            current_user.username.lower()=='luyifan') %}
                             <a href="{{ url_for('admin.index') }}">管理员主页</a>
                         {% else %}
                             <a href="{{ url_for('main.index') }}">主页</a>
@@ -47,7 +48,8 @@
                 </div>
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
-                        {% if current_user.is_authenticated and current_user.username.lower()=='admin'  %}
+                        {% if current_user.is_authenticated and (current_user.username.lower()=='admin' or
+                            current_user.username.lower()=='luyifan')  %}
                             <li><a href="{{ url_for('main.index') }}">报表主页</a></li>
                         {% endif %}
                     </ul>

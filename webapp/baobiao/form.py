@@ -11,7 +11,7 @@ from .. import excels
 
 
 class BaobiaoForm(FlaskForm):
-    excels = SelectMultipleField('拆分报表（多选）', validators=[DataRequired()], coerce=int)
+    excels = SelectMultipleField(u'拆分报表（多选）', validators=[DataRequired()], coerce=int)
     submit = SubmitField(u'拆分')
 
 
@@ -21,21 +21,21 @@ class TianxieForm(FlaskForm):
 
 
 class PreviewForm(FlaskForm):
-    excel = SelectField('报表模板', validators=[DataRequired()], coerce=int)
+    excel = SelectField(u'报表模板', validators=[DataRequired()], coerce=int)
     preview = SubmitField(u'预览报表模板')
 
 
 class GenerateForm(FlaskForm):
-    excels = SelectMultipleField('生成报表（可多选）', validators=[DataRequired()], coerce=int)
-    submit = SubmitField('生成')
+    excels = SelectMultipleField(u'生成报表（可多选）', validators=[DataRequired()], coerce=int)
+    submit = SubmitField(u'生成')
 
 
 class QueryForm(FlaskForm):
     form_name = HiddenField('Form Name')
-    excel = SelectField('报表名', validators=[DataRequired()], coerce=int, default=1, id='select_excel')
-    querydate = SelectField('查询日期', validators=[DataRequired()], coerce=int, default=1, id='select_query_date')
+    excel = SelectField(u'报表名', validators=[DataRequired()], coerce=int, id='select_excel')
+    querydate = SelectField(u'查询日期', coerce=str, id='select_query_date')
     customizeddate = DateField(u'或自选日期', format='%Y-%m-%d')
-    submit = SubmitField('查询')
+    submit = SubmitField(u'查询')
 
 
 

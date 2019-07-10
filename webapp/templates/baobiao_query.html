@@ -9,6 +9,7 @@
 </div>
 <form class="form" method="post" target="_blank">
 <div class="col-md-4">
+    {{ form.csrf_token }}
     {{ wtf.quick_form(form) }}
 </div>
 </form>
@@ -51,7 +52,6 @@ $(function() {
 
     // event listener to state dropdown change
     dropdown.excel.on('change', function () {
-    {#$('#select_excel').change(function () {#}
         updateQueryDates();
     });
 
