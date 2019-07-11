@@ -327,27 +327,34 @@ def generate():
         generatedate = lastmonth
         allcomplete = True
         generate_fail_list = []
+        pythoncom.CoInitialize()
+        xlApp = win32.DispatchEx("Excel.Application")
+        xlApp.Visible = False
+        xlApp.DisplayAlerts = False
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_SET[generatefile]
             try:
-                alert = generateFile(filetogenerate_chinese, generatedate)
+                alert = generateFile(filetogenerate_chinese, generatedate, xlApp)
                 if 'alert' in locals() and len(alert) != 0:
                     allcomplete = False
                     alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
                     flash('以下用户还未完成对应报表：' + alertmsg)
             except:
                 generate_fail_list.append(filetogenerate_chinese)
+        xlApp.Quit()
         if len(generate_fail_list) != 0:
             flash('以下报表生成失败，可能是管理员尚未上传模板：' + ','.join(generate_fail_list))
-        if allcomplete and len(generate_fail_list) != len(generatelist):
-            flash('其他所选报表生成成功')
+        if allcomplete and len(generate_fail_list) == 0:
+            flash('所选报表均生成成功')
+        elif allcomplete and len(generate_fail_list) != len(generatelist):
+            flash('除生成失败的报表外，其他所选报表生成成功')
         else:
-            flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整')
+            flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整，已删除')
         return render_template('generate.html', form=form)
 
 
-def generateFile(filetogenerate_chinese, generatedate):
-    pythoncom.CoInitialize()
+def generateFile(filetogenerate_chinese, generatedate, xlApp):
+    # pythoncom.CoInitialize()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
@@ -457,25 +464,21 @@ def generateFile(filetogenerate_chinese, generatedate):
         os.mkdir(filedir)
     # 保存带公式的xlsx
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
-    # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值，最后再存为html用于预览
+    # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值
     #### https://www.cnblogs.com/vhills/p/8327918.html
-    print('Begin dispatch')
-    xlApp = win32.DispatchEx("Excel.Application")
-    print('End dispatch')
-    xlApp.Visible = False
+    print('Begin Open')
     xlBook = xlApp.Workbooks.Open(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    print('End Open,Begin Save')
     xlBook.Save()
-    xlBook.Close()
-    xlApp.Quit()
-    wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
-    # 删除除了第一个sheet外的sheet
-    # sheetnames = wb.get_sheet_names()
-    # for i in range(1, len(sheetnames)):
-    #     sheet = wb.get_sheet_by_name(sheetnames[i])
-    #     wb.remove_sheet(sheet)
-    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
-    del wb
+    print('End Save, Begin Close')
+    xlBook.Close(True)
+    xlBook = None
     gc.collect()
+    print('End Close')
+    wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
+    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+    # del wb
+    # gc.collect()
     print(alertset)
     if len(alertset) != 0 and os.path.exists(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx'):
         print('有用户尚未填写，删除生成的excel')
