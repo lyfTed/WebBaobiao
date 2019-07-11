@@ -88,48 +88,48 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     FILE_TO_SET = get_baobiao_name()
     FREQ_OF_FILE = get_baobiao_freq()
     conn.ping(reconnect=True)
-    wb = xlrd.open_workbook(file_to_generate)
-    sh = wb.sheet_by_index(0)
-    nrows = sh.nrows  # 行数
-    ncols = sh.ncols  # 列数
-    title = sh.cell_value(0, 0)
-    cols = [chr(i + ord('A')) for i in range(ncols)]
-    rows = [str(i + 1) for i in range(nrows)]
-
-    wb2 = load_workbook(file_to_generate)
-    sheet_names = wb2.get_sheet_names()
-    name = sheet_names[0]
-    sheet_ranges = wb2[name]
-    df = pd.DataFrame(sheet_ranges.values)
-    df = df.fillna("")
-    cursor = conn.cursor()
     # 创建table
     # 用第一行第一列做表名
     tablename_chinese = filename_chinese
     tablename = filename_english
     freq = FREQ_OF_FILE[tablename_chinese]
     sql = 'drop table if exists ' + tablename
+    cursor = conn.cursor()
     cursor.execute(sql)
     sql = 'create table ' + tablename + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500),' \
-          ' freq VARCHAR(10), editable Boolean, primary key (position));'
+          '(tablename VARCHAR(100), sheetname VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500),' \
+          ' freq VARCHAR(10), editable Boolean, primary key (sheetname, position));'
     cursor.execute(sql)
-    try:
-        for i in range(nrows):
-            for j in range(ncols):
-                position = cols[j] + rows[i]
-                content = str(df.iloc[i, j])
-                editable = False
-                if len(content) > 0 and content[0] == "|":
-                    editable = True
-                sql = 'insert into ' + tablename + ' (tablename, position, content, freq, editable) values ("' + \
-                      tablename_chinese + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
-                cursor.execute(sql)
-        conn.commit()
-    except:
-        print('Import Into Table Failure')
-    finally:
-        pass
+
+    wb = load_workbook(file_to_generate)
+    sheet_names = wb.get_sheet_names()
+    for sheet_name in sheet_names:
+        sheet_ranges = wb.get_sheet_by_name(sheet_name)
+        nrows = sheet_ranges.max_row
+        ncols = sheet_ranges.max_column
+        if nrows == 1 and ncols == 1:
+            continue
+        cols = [chr(i + ord('A')) for i in range(ncols)]
+        rows = [str(i + 1) for i in range(nrows)]
+        df = pd.DataFrame(sheet_ranges.values)
+        df = df.fillna("")
+        try:
+            for i in range(nrows):
+                for j in range(ncols):
+                    position = cols[j] + rows[i]
+                    content = str(df.iloc[i, j])
+                    editable = False
+                    if len(content) > 0 and content[0] == "|":
+                        editable = True
+                    sql = 'insert into ' + tablename + ' (tablename, sheetname, position, content, freq, editable) values ("' + \
+                          tablename_chinese + '","' + str(sheet_name) + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
+                    cursor.execute(sql)
+            conn.commit()
+        except:
+            print(sql)
+            print('Import Into Table Failure')
+        finally:
+            pass
     conn.close()
 
 

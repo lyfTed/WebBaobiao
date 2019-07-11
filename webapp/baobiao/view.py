@@ -95,7 +95,7 @@ def baobiao_split(cursor, file):
     filetoset_chinese = FILE_TO_SET[file]
     filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file])).lower()
     freq = FREQ_OF_FILE[filetoset_chinese]
-    sql = 'select distinct position, content from ' + filetoset + ' where editable=True;'
+    sql = 'select distinct position, content, sheetname from ' + filetoset + ' where editable=True;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
@@ -106,13 +106,15 @@ def baobiao_split(cursor, file):
     for i in range(len(sqlresult)):
         # 获取哪个格子
         position = sqlresult[i][0]
+        sheetname = sqlresult[i][2]
         # 获取计算式子
         ###################
         content_list = re.split('[-+*/()（）]', sqlresult[i][1].lstrip('|'))
         content_list = [s for s in content_list if s != '']
         # 存储分割后的数据进报表表
         content_store = ';'.join(content_list)
-        sql = 'update ' + filetoset + ' set content_list="' + str(content_store) + '" where position="' + str(position) + '";'
+        sql = 'update ' + filetoset + ' set content_list="' + str(content_store) + '" where position="' + str(position) \
+              + '" and sheetname="' + str(sheetname) + '";'
         cursor.execute(sql)
         conn.commit()
         # 拆分到用户表
@@ -126,10 +128,11 @@ def baobiao_split(cursor, file):
             if user not in userlist:
                 userlist.append(user)
                 userset[user] = []
-            userset[user].append((position, value))
+            userset[user].append((position, value, sheetname))
     for user in userlist:
-        sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), position VARCHAR(100),' \
-                ' content VARCHAR(500), value_last Double, value DOUBLE, submit_time VARCHAR(20), freq VARCHAR(5));'
+        sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), sheetname VARCHAR(100), ' \
+                'position VARCHAR(100), content VARCHAR(500), value_last Double, value DOUBLE, ' \
+                'submit_time VARCHAR(20), freq VARCHAR(5));'
         cursor.execute(sql)
         sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
         cursor.execute(sql)
@@ -142,12 +145,13 @@ def baobiao_split(cursor, file):
             # print(userset[user][i])
             position = userset[user][i][0]
             value = userset[user][i][1]
-            sql = 'insert into ' + user + ' (baobiao, position, content, freq) values ("' + \
-                  filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+            sheetname = userset[user][i][2]
+            sql = 'insert into ' + user + ' (baobiao, sheetname, position, content, freq) values ("' + filetoset_chinese\
+                  + '", "' + str(sheetname) + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
             cursor.execute(sql)
             try:
-                sql = 'insert into ' + user + lastmonth + ' (baobiao, position, content, freq) values ("' + \
-                      filetoset_chinese + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+                sql = 'insert into ' + user + lastmonth + ' (baobiao, sheetname, position, content, freq) values ("' + \
+                      filetoset_chinese + '", "' + str(sheetname) + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
                 cursor.execute(sql)
             except:
                 pass
@@ -176,7 +180,8 @@ def fill():
                 # 上一期， Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and ' \
+                        'content=s.content and freq="M");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -193,7 +198,7 @@ def fill():
                 # 上一期, Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="M");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -202,7 +207,7 @@ def fill():
                 # 上一期, Quarterly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="Q");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="Q");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -218,7 +223,7 @@ def fill():
                 # 上一期, Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="M");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="M");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -227,7 +232,7 @@ def fill():
                 # 上一期, Quarterly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="Q");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="Q");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -236,7 +241,7 @@ def fill():
                 # 上一期, Half year
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=153)).strftime("_%Y_%m")
                 sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and position=s.position and content=s.content and freq="H");'
+                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="H");'
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -273,9 +278,7 @@ def fill():
         tianxie = request.form.getlist("values")
         try:
             for i in range(len(tianxie)):
-                # baobiao = sqlresult[i][0]
-                # gezi = sqlresult[i][1]
-                content = sqlresult[i][2]
+                content = sqlresult[i][3]
                 value = str(tianxie[i])
                 submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
                 sql = 'update ' + username + lastmonth + ' set value=' + value + ' where content="' + content + '";'
@@ -366,14 +369,14 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     # 创建新表
     sql = 'drop table if exists ' + tablenamenew
     cursor.execute(sql)
-    sql = 'create table ' + tablenamenew + \
-          '(tablename VARCHAR(100), position VARCHAR(100), content VARCHAR(100),' \
-          ' editable Boolean, content_formula VARCHAR(500), content_list VARCHAR(500), primary key (position));'
+    sql = 'create table ' + tablenamenew + '(tablename VARCHAR(100), sheetname VARCHAR(100), position VARCHAR(100), ' \
+        'content VARCHAR(100), editable Boolean, content_formula VARCHAR(500), content_list VARCHAR(500),' \
+        ' primary key (sheetname, position));'
     cursor.execute(sql)
     conn.commit()
     try:
-        sql = 'insert into ' + tablenamenew + ' (tablename, position, content, editable, content_formula, content_list) ' \
-              'select tablename, position, content, editable, content, content_list from ' + filetogenerate + ';'
+        sql = 'insert into ' + tablenamenew + ' (tablename, sheetname, position, content, editable, content_formula, content_list) ' \
+              'select tablename, sheetname, position, content, editable, content, content_list from ' + filetogenerate + ';'
         cursor.execute(sql)
         conn.commit()
     except:
@@ -382,7 +385,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
         pass
 
     # 从模板拿需要填写的格子
-    sql = 'select distinct position, content, content_list from ' + filetogenerate + ' where editable=True;'
+    sql = 'select distinct sheetname, position, content, content_list from ' + filetogenerate + ' where editable=True;'
     cursor.execute(sql)
     # conn.commit()
     sqlresult = cursor.fetchall()
@@ -391,10 +394,11 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     # 按每一个格子循环去用户表中取数
     for i in range(len(sqlresult)):
         # 获取哪个格子
-        position = sqlresult[i][0]
-        formula = sqlresult[i][1]
+        sheetname = sqlresult[i][0]
+        position = sqlresult[i][1]
+        formula = sqlresult[i][2]
         # 获取用户和内容
-        content_list = sqlresult[i][2].split(';')
+        content_list = sqlresult[i][3].split(';')
         uservalue_list = []
         for content in content_list:
             userandvalue = re.split(':|：', content)
@@ -407,7 +411,8 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
                 valuecontent = None
             try:
                 sql = 'select value from ' + user + lastmonth + ' where baobiao="' + filetogenerate_chinese + \
-                      '" and position="' + str(position) + '" and content="' + valuecontent + '";'
+                      '" and sheetname="' + str(sheetname) + '" and position="' + str(position) + '" and content="' +\
+                      valuecontent + '";'
                 cursor.execute(sql)
                 value = cursor.fetchone()[0]
                 uservalue_list.append(value)
@@ -433,37 +438,45 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
         except:
             positionresult = "=NA()" ##计算报错就在excel中填NA
         sql = 'update ' + filetogenerate + '_' + generatedate + ' set content="' + str(positionresult) + \
-              '" where position="' + str(position) + '";'
+              '" where sheetname="' + str(sheetname) + '" and position="' + str(position) + '";'
         cursor.execute(sql)
         conn.commit()
     ######################
     # 生成excel
     # 计算行数列数
     wb = load_workbook(pardir + '/Files/upload/' + filetogenerate_chinese + '.xlsx')
-    sh = wb.active
-    sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + ' where editable=TRUE;'
-    cursor.execute(sql)
-    conn.commit()
-    sqlresult = cursor.fetchall()
-    for x in sqlresult:
-        try:
-            sh[x[0]] = float(x[1])
+    sheet_names = wb.get_sheet_names()
+    for sheet_name in sheet_names:
+        sh = wb.get_sheet_by_name(sheet_name)
+        nrows = sh.max_row
+        ncols = sh.max_column
+        if nrows == 1 and ncols == 1:
+            continue
+        sql = 'select distinct position, content from ' + filetogenerate + '_' + generatedate + \
+              ' where sheetname="' + str(sheet_name) + '" and editable=TRUE;'
+        cursor.execute(sql)
+        conn.commit()
+        sqlresult = cursor.fetchall()
+        for x in sqlresult:
+            try:
+                sh[x[0]] = float(x[1])
+                sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
+            except:
+                sh[x[0]] = x[1]
+        # 把带公式计算的格子填入公式，自动计算
+        sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
+        cursor.execute(sql)
+        conn.commit()
+        sqlresult = cursor.fetchall()
+        for x in sqlresult:
+            sh[x[0]] = str(x[1])
             sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
-        except:
-            sh[x[0]] = x[1]
-    # 把带公式计算的格子填入公式，自动计算
-    sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%";'
-    cursor.execute(sql)
-    conn.commit()
-    sqlresult = cursor.fetchall()
-    for x in sqlresult:
-        sh[x[0]] = str(x[1])
-        sh[x[0]].number_format = numbers.FORMAT_NUMBER_COMMA_SEPARATED1
-    filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate_chinese)
-    if not os.path.exists(filedir):
-        os.mkdir(filedir)
-    # 保存带公式的xlsx
-    wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+        filedir = os.path.join(pardir, 'Files', 'Generate', filetogenerate_chinese)
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
+        # 保存带公式的xlsx
+        wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
+
     # 去除公式只保存数值,需要先excel程序打开再保存一下，然后用openpyxl只保留数值
     #### https://www.cnblogs.com/vhills/p/8327918.html
     print('Begin Open')
@@ -477,8 +490,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     print('End Close')
     wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
-    # del wb
-    # gc.collect()
+
     print(alertset)
     if len(alertset) != 0 and os.path.exists(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx'):
         print('有用户尚未填写，删除生成的excel')
