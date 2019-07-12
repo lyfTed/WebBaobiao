@@ -3,24 +3,23 @@ from . import _baobiao
 
 import codecs
 import pandas as pd
-from flask import render_template, request, send_from_directory, abort, flash, redirect, send_file, url_for, jsonify
+from flask import render_template, request, flash, redirect, url_for, jsonify
 from pymysql import err
 from flask_login import login_required, current_user
 import os
 import re
 from .form import BaobiaoForm, TianxieForm, QueryForm, PreviewForm
 from pypinyin import lazy_pinyin
-import pyexcel
-from openpyxl import Workbook, load_workbook
+from openpyxl import load_workbook
 from openpyxl.styles import numbers
 import win32com.client as win32
 from datetime import datetime, date, timedelta
-from win32com.client import Dispatch, constants
 from .form import GenerateForm, excels
 from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
 import gc
+import pyexcel
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -490,7 +489,6 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     print('End Close')
     wb = load_workbook(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx', data_only=True)
     wb.save(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx')
-
     print(alertset)
     if len(alertset) != 0 and os.path.exists(filedir + '/' + filetogenerate_chinese + '_' + generatedate + '.xlsx'):
         print('有用户尚未填写，删除生成的excel')
@@ -502,16 +500,23 @@ def exceltohtml(baobiao, querydt, output):
     filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
     destdir = os.path.join(pardir, 'templates')
     xd = pd.ExcelFile(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
-    pd.set_option('display.max_colwidth', 1000)
+    pd.set_option('display.float_format', lambda x: format(x, ',.2f'), 'display.max_colwidth', 1000)
     df = xd.parse()
     with codecs.open(destdir + '/' + output + '.html', 'w', encoding='utf-8') as html_file:
         html_file.write(df.to_html(header=True, index=True, na_rep=''))
 
 
+def exceltohtml2(baobiao, querydt, output):
+    filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
+    destdir = os.path.join(pardir, 'templates')
+    # pyexcel.save_as(file_name=filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx',
+    #                 dest_file_name=destdir + '/' + 'query.sortable.html')
+    sheet = pyexcel.get_sheet(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
+    sheet.save_as(destdir + '/' + 'query.sortable.html', display_length=10)
+
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def query():
-    # pythoncom.CoInitialize()
     form = QueryForm(form_name='QueryForm')
     form.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
     form.querydate.choices = [(a.id, a.freq) for a in BaobiaoToSet.query.all()]
@@ -527,7 +532,9 @@ def query():
             querydt = form.querydate.data
         try:
             exceltohtml(baobiao, querydt, 'query')
+            # exceltohtml2(baobiao, querydt, 'query')
             return render_template("query.html")
+            # return render_template("query.sortable.html")
         except:
             flash('所选报表尚未生成')
     return redirect(url_for('baobiao.query'))
