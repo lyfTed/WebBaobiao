@@ -333,6 +333,7 @@ def generate():
         xlApp = win32.DispatchEx("Excel.Application")
         xlApp.Visible = False
         xlApp.DisplayAlerts = False
+        conn.ping(reconnect=True)
         for generatefile in generatelist:
             filetogenerate_chinese = FILE_TO_SET[generatefile]
             try:
@@ -352,12 +353,13 @@ def generate():
             flash('除生成失败的报表外，其他所选报表生成成功')
         else:
             flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整，已删除')
+        conn.close()
         return render_template('generate.html', form=form)
 
 
 def generateFile(filetogenerate_chinese, generatedate, xlApp):
     # pythoncom.CoInitialize()
-    conn.ping(reconnect=True)
+    # conn.ping(reconnect=True)
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
