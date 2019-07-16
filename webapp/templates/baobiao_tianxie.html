@@ -10,7 +10,8 @@
     </div>
     <form method="post" action="/baobiao/fill/" enctype="multipart/form-data" name="tianxie" id="tianxie">
     <div class="col-md-12">
-    <table class="table table-bordered">
+{#    <table class="table table-condensed">#}
+    <table class="table table-hover">
     <tr>
         <th>报表</th>
         <th>工作表</th>
@@ -19,6 +20,7 @@
         <th>上期值</th>
         <th>当前值</th>
         <th>上次提交时间</th>
+        <th>此填写内容涉及报表格子</th>
         <th>请更新值，留空为不更新</th>
     </tr>
         {% for i in sqlresult %}
@@ -29,8 +31,9 @@
                 <td>{{ i[2] }}</td>
                 <td>{{ i[3] }}</td>
                 <td>{{ i[4] }}</td>
-                <td>{{ i[5] }}</td>
+                <td >{{ i[5] }}</td>
                 <td>{{ i[6] }}</td>
+                <td>{{ i[8] }}</td>
                 <td>
                     <input name="values" value="" type="text">
                 </td>

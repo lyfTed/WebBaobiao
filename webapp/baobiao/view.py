@@ -131,7 +131,7 @@ def baobiao_split(cursor, file):
     for user in userlist:
         sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), sheetname VARCHAR(100), ' \
                 'position VARCHAR(100), content VARCHAR(500), value_last Double, value DOUBLE, ' \
-                'submit_time VARCHAR(20), freq VARCHAR(5));'
+                'submit_time VARCHAR(20), freq VARCHAR(5), content_concerned VARCHAR(500));'
         cursor.execute(sql)
         sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
         cursor.execute(sql)
@@ -151,6 +151,22 @@ def baobiao_split(cursor, file):
             try:
                 sql = 'insert into ' + user + lastmonth + ' (baobiao, sheetname, position, content, freq) values ("' + \
                       filetoset_chinese + '", "' + str(sheetname) + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+                cursor.execute(sql)
+            except:
+                pass
+        sql = 'select distinct content from ' + user + ';'
+        cursor.execute(sql)
+        distinct_content_list = [x[0] for x in cursor.fetchall()]
+        for distinct_content in distinct_content_list:
+            sql = 'select distinct baobiao, sheetname, position from ' + user + ' where content="' + str(distinct_content) +'";'
+            cursor.execute(sql)
+            sqlresult = cursor.fetchall()
+            rs = '、'.join(['-'.join(x) for x in sqlresult])
+            sql = 'update ' + user + ' set content_concerned="' + rs + '" where content="' + distinct_content + '";'
+            print(sql)
+            cursor.execute(sql)
+            try:
+                sql = 'update ' + user + lastmonth + ' set content_concerned="' + rs + '" where content="' + distinct_content + '";'
                 cursor.execute(sql)
             except:
                 pass

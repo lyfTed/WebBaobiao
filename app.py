@@ -13,7 +13,7 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(threaded=True, processes=4)
+    app.run(host='0.0.0.0', threaded=True, processes=4)
 
 
 
