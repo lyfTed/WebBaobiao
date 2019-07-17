@@ -3,7 +3,7 @@ from . import _baobiao
 
 import codecs
 import pandas as pd
-from flask import render_template, request, flash, redirect, url_for, jsonify
+from flask import render_template, request, flash, redirect, url_for, jsonify, send_file
 from pymysql import err
 from flask_login import login_required, current_user
 import os
@@ -20,6 +20,7 @@ from ..models import BaobiaoToSet
 import pythoncom
 import gc
 import pyexcel
+from PIL import ImageGrab
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -280,6 +281,19 @@ def fill():
                 baobiao = FILE_TO_SET[str(previewform.excel.data)]
                 filedir = os.path.join(pardir, 'Files', 'upload')
                 destdir = os.path.join(pardir, 'templates')
+
+                pythoncom.CoInitialize()
+                xlApp = win32.DispatchEx("Excel.Application")
+                xlApp.Visible = False
+                xlBitmap = 2
+                wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '.xlsx')
+                # 多个工作表
+                ws = wb.Worksheets[1]
+                ws.UsedRange.CopyPicture(Format=xlBitmap)
+                img = ImageGrab.grabclipboard()
+                img.save(destdir + '/img.jpg')
+                xlApp.Quit()
+
                 xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
                 pd.set_option('display.max_colwidth', 1000)
                 df = xd.parse()
