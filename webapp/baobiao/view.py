@@ -173,6 +173,29 @@ def baobiao_split(cursor, file):
                 pass
 
 
+def exceltopng(baobiao, querydt, output):
+    if querydt is not None:
+        filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
+    else:
+        filedir = os.path.join(pardir, 'Files', 'upload')
+    destdir = os.path.join(pardir, 'static', 'img', current_user.username)
+    if not os.path.exists(destdir):
+        os.mkdir(destdir)
+    pythoncom.CoInitialize()
+    xlApp = win32.DispatchEx("Excel.Application")
+    xlApp.Visible = False
+    xlBitmap = 2
+    if querydt is not None:
+        wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
+    else:
+        wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '.xlsx')
+    ws = wb.Worksheets[1]
+    ws.UsedRange.CopyPicture(Format=xlBitmap)
+    img = ImageGrab.grabclipboard()
+    img.save(destdir + '/' + output)
+    xlApp.Quit()
+
+
 @_baobiao.route('/fill/', methods=['GET', 'POST'])
 @login_required
 def fill():
@@ -279,20 +302,6 @@ def fill():
             try:
                 FILE_TO_SET = get_baobiao_name()
                 baobiao = FILE_TO_SET[str(previewform.excel.data)]
-                filedir = os.path.join(pardir, 'Files', 'upload')
-                destdir = os.path.join(pardir, 'static', 'img', current_user.username)
-                if not os.path.exists(destdir):
-                    os.mkdir(destdir)
-                pythoncom.CoInitialize()
-                xlApp = win32.DispatchEx("Excel.Application")
-                xlApp.Visible = False
-                xlBitmap = 2
-                wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '.xlsx')
-                ws = wb.Worksheets[1]
-                ws.UsedRange.CopyPicture(Format=xlBitmap)
-                img = ImageGrab.grabclipboard()
-                img.save(destdir + '/fill_img.png')
-                xlApp.Quit()
 
                 # excel 2 dataframe
                 # xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
@@ -300,6 +309,8 @@ def fill():
                 # df = xd.parse()
                 # with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
                 #     html_file.write(df.to_html(header=True, index=True, na_rep=''))
+
+                exceltopng(baobiao, None, 'fill_img.png')
                 previewimg = url_for('static', filename='img/' + current_user.username + '/fill_img.png')
                 return render_template("preview.html", baobiao=baobiao, previewimg=previewimg)
             except:
@@ -540,23 +551,6 @@ def exceltohtml(baobiao, querydt, output):
         html_file.write(df.to_html(header=True, index=True, na_rep=''))
 
 
-def exceltopng(baobiao, querydt, output):
-    filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
-    destdir = os.path.join(pardir, 'static', 'img', current_user.username)
-    if not os.path.exists(destdir):
-        os.mkdir(destdir)
-    pythoncom.CoInitialize()
-    xlApp = win32.DispatchEx("Excel.Application")
-    xlApp.Visible = False
-    xlBitmap = 2
-    wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
-    ws = wb.Worksheets[1]
-    ws.UsedRange.CopyPicture(Format=xlBitmap)
-    img = ImageGrab.grabclipboard()
-    img.save(destdir + '/query_img.png')
-    xlApp.Quit()
-
-
 @_baobiao.route('/query/', methods=['GET', 'POST'])
 @login_required
 def query():
@@ -574,7 +568,7 @@ def query():
         else:
             querydt = form.querydate.data
         try:
-            exceltopng(baobiao, querydt, 'query')
+            exceltopng(baobiao, querydt, 'query_img.png')
             queryimg = url_for('static', filename='img/' + current_user.username + '/query_img.png')
             return render_template("query.html", baobiao=baobiao, queryimg=queryimg)
         except:

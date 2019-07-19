@@ -1,5 +1,6 @@
 # _*_ coding: utf-8 _*_
 import os
+from datetime import timedelta
 
 from time import strftime
 import logging
@@ -50,6 +51,7 @@ class Config:
     # 是否追踪修改
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     UPLOADED_EXCELS_DEST = 'upload'
+    SEND_FILE_MAX_AGE_DEFAULT = timedelta(seconds=1)
 
 
     @staticmethod
