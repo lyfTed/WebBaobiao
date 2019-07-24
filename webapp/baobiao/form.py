@@ -21,8 +21,9 @@ class TianxieForm(FlaskForm):
 
 
 class PreviewForm(FlaskForm):
-    excel = SelectField(u'报表模板（只展示第一个Sheet）', validators=[DataRequired()], coerce=int)
-    preview = SubmitField(u'预览报表模板')
+    excel = SelectField(u'报表模板', validators=[DataRequired()], coerce=int)
+    preview = SubmitField(u'预览第一个Sheet')
+    download = SubmitField(u'下载报表模板')
 
 
 class GenerateForm(FlaskForm):

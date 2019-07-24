@@ -45,9 +45,10 @@
     </div>
     </form>
     <form class="form" method="post" target="_blank">
-    <div class="col-md-3">
+    <div class="col-md-4">
         {{ previewform.csrf_token }}
         {{ wtf.form_field(previewform.excel) }}
+        {{ wtf.form_field(previewform.download) }}
         {{ wtf.form_field(previewform.preview) }}
     </div>
     </form>

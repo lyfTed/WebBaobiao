@@ -203,7 +203,6 @@ def fill():
     # 预览填写报表
     previewform = PreviewForm()
     previewform.excel.choices = [(a.id, a.file) for a in BaobiaoToSet.query.all()]
-
     username = current_user.username.lower()
     conn.ping(reconnect=True)
     cursor = conn.cursor()
@@ -302,17 +301,25 @@ def fill():
             try:
                 FILE_TO_SET = get_baobiao_name()
                 baobiao = FILE_TO_SET[str(previewform.excel.data)]
-
                 # excel 2 dataframe
                 # xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
                 # pd.set_option('display.max_colwidth', 1000)
                 # df = xd.parse()
                 # with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
                 #     html_file.write(df.to_html(header=True, index=True, na_rep=''))
-
                 exceltopng(baobiao, None, 'fill_img.png')
                 previewimg = url_for('static', filename='img/' + current_user.username + '/fill_img.png')
                 return render_template("preview.html", baobiao=baobiao, previewimg=previewimg)
+            except:
+                flash('该报表模板尚未上传，请联系管理员上传')
+                return redirect('/baobiao/fill')
+        elif previewform.download.data:
+            try:
+                FILE_TO_SET = get_baobiao_name()
+                baobiao = FILE_TO_SET[str(previewform.excel.data)]
+                filedir = os.path.join(pardir, 'Files', 'upload')
+                filepath = filedir + '/' + baobiao + '.xlsx'
+                return send_file(filepath, mimetype='xlsx', as_attachment=True)
             except:
                 flash('该报表模板尚未上传，请联系管理员上传')
                 return redirect('/baobiao/fill')
@@ -381,10 +388,13 @@ def generate():
             filetogenerate_chinese = FILE_TO_SET[generatefile]
             try:
                 alert = generateFile(filetogenerate_chinese, generatedate, xlApp)
-                if 'alert' in locals() and len(alert) != 0:
-                    allcomplete = False
-                    alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
-                    flash('以下用户还未完成对应报表：' + alertmsg)
+                try:
+                    if len(alert) != 0:
+                        allcomplete = False
+                        alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
+                        flash('以下用户还未完成对应报表：' + alertmsg)
+                except:
+                    pass
             except:
                 generate_fail_list.append(filetogenerate_chinese)
         xlApp.Quit()
@@ -406,6 +416,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
+    print(tablenamenew)
     userlist = []
     # 获取上个月日期
     lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
