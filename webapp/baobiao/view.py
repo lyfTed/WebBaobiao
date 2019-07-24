@@ -388,16 +388,12 @@ def generate():
             filetogenerate_chinese = FILE_TO_SET[generatefile]
             try:
                 alert = generateFile(filetogenerate_chinese, generatedate, xlApp)
-                try:
-                    if len(alert) != 0:
-                        allcomplete = False
-                        alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
-                        flash('以下用户还未完成对应报表：' + alertmsg)
-                except:
-                    pass
+                if len(alert) != 0:
+                    allcomplete = False
+                    alertmsg = filetogenerate_chinese + ': ' + ','.join(alert)
+                    flash('以下用户还未完成对应报表：' + alertmsg)
             except:
                 generate_fail_list.append(filetogenerate_chinese)
-        xlApp.Quit()
         if len(generate_fail_list) != 0:
             flash('以下报表生成失败，可能是管理员尚未上传模板：' + ','.join(generate_fail_list))
         if allcomplete and len(generate_fail_list) == 0:
@@ -407,6 +403,7 @@ def generate():
         else:
             flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整，已删除')
         conn.close()
+        xlApp.Quit()
         return render_template('generate.html', form=form)
 
 
