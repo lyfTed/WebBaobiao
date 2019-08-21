@@ -146,9 +146,11 @@ def download():
         generatedate = request.values.get('generatedate')
         generatedate = generatedate.replace('-', '_')
         filedir = os.path.join(pardir, 'Files', 'Generate')
-        if os.path.exists(filedir+'/Baobiao.zip'):
-            os.remove(filedir+'/Baobiao.zip')
-        zipf = zipfile.ZipFile(filedir+'/Baobiao.zip', 'w', zipfile.ZIP_DEFLATED)
+        downloaddir = os.path.join(pardir, 'Files', 'Download')
+        downloadfilename = 'Baobiao_' + current_user.username.lower() + '.zip'
+        if os.path.exists(downloaddir + '/' + downloadfilename):
+            os.remove(downloaddir + '/' + downloadfilename)
+        zipf = zipfile.ZipFile(downloaddir + '/' + downloadfilename, 'w', zipfile.ZIP_DEFLATED)
         for filetodownload in downloadlist:
             filefolder = FILE_TO_SET[filetodownload]
             filename = filefolder + '_' + generatedate + '.xlsx'
@@ -156,6 +158,6 @@ def download():
             if os.path.isfile(os.path.join(filedir, filefolder, filename)):
                 zipf.write(filedir + '/' + filefolder + '/' + filename, filename)
         zipf.close()
-        return send_file(filedir+'/'+'Baobiao.zip', mimetype='zip', attachment_filename='Baobiao.zip', as_attachment=True)
-
+        return send_file(downloaddir + '/' + downloadfilename, mimetype='zip',
+                         attachment_filename=downloadfilename, as_attachment=True)
 

@@ -12,6 +12,9 @@ from .form import BaobiaoForm, TianxieForm, QueryForm, PreviewForm
 from pypinyin import lazy_pinyin
 from openpyxl import load_workbook
 from openpyxl.styles import numbers
+from win32process import SetProcessWorkingSetSize
+from win32api import GetCurrentProcessId, OpenProcess
+from win32con import PROCESS_ALL_ACCESS
 import win32com.client as win32
 from datetime import datetime, date, timedelta
 from .form import GenerateForm, excels
@@ -173,7 +176,7 @@ def baobiao_split(cursor, file):
                 pass
 
 
-def exceltopng(baobiao, querydt, output):
+def exceltopng(baobiao, querydt, output, xlApp):
     if querydt is not None:
         filedir = os.path.join(pardir, 'Files', 'generate', baobiao)
     else:
@@ -181,8 +184,8 @@ def exceltopng(baobiao, querydt, output):
     destdir = os.path.join(pardir, 'static', 'img', current_user.username)
     if not os.path.exists(destdir):
         os.mkdir(destdir)
-    pythoncom.CoInitialize()
-    xlApp = win32.DispatchEx("Excel.Application")
+    # pythoncom.CoInitialize()
+    # xlApp = win32.DispatchEx("Excel.Application")
     xlApp.Visible = False
     xlBitmap = 2
     if querydt is not None:
@@ -193,7 +196,30 @@ def exceltopng(baobiao, querydt, output):
     ws.UsedRange.CopyPicture(Format=xlBitmap)
     img = ImageGrab.grabclipboard()
     img.save(destdir + '/' + output)
-    xlApp.Quit()
+    # xlApp.Quit()
+
+
+def close_excel_by_force(excel):
+    import win32process
+    import win32gui
+    import win32api
+    import win32con
+
+    # Get the window's process id's
+    hwnd = excel.Hwnd
+    t, p = win32process.GetWindowThreadProcessId(hwnd)
+    # Ask window nicely to close
+    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+    # Allow some time for app to close
+    time.sleep(10)
+    # If the application didn't close, force close
+    try:
+        handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, p)
+        if handle:
+            win32api.TerminateProcess(handle, 0)
+            win32api.CloseHandle(handle)
+    except:
+        pass
 
 
 @_baobiao.route('/fill/', methods=['GET', 'POST'])
@@ -307,10 +333,25 @@ def fill():
                 # df = xd.parse()
                 # with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
                 #     html_file.write(df.to_html(header=True, index=True, na_rep=''))
-                exceltopng(baobiao, None, 'fill_img.png')
+                pythoncom.CoInitialize()
+                xlApp = win32.DispatchEx("Excel.Application")
+                exceltopng(baobiao, None, 'fill_img.png', xlApp)
                 previewimg = url_for('static', filename='img/' + current_user.username + '/fill_img.png')
+                # quit excel and release com object
+                xlApp.Quit()
+                xlApp = None
+                pythoncom.CoUninitialize()
+                # pid = GetCurrentProcessId()
+                # handle = OpenProcess(PROCESS_ALL_ACCESS, True, pid)
+                # SetProcessWorkingSetSize(handle,-1,-1)
+                gc.collect()
                 return render_template("preview.html", baobiao=baobiao, previewimg=previewimg)
             except:
+                gc.collect()
+                xlApp.Quit()
+                # close_excel_by_force(xlApp)
+                xlApp = None
+                pythoncom.CoUninitialize()
                 flash('该报表模板尚未上传，请联系管理员上传')
                 return redirect('/baobiao/fill')
         elif previewform.download.data:
@@ -404,6 +445,8 @@ def generate():
             flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整，已删除')
         conn.close()
         xlApp.Quit()
+        xlApp = None
+        pythoncom.CoUninitialize()    
         return render_template('generate.html', form=form)
 
 
@@ -576,10 +619,20 @@ def query():
         else:
             querydt = form.querydate.data
         try:
-            exceltopng(baobiao, querydt, 'query_img.png')
+            pythoncom.CoInitialize()
+            xlApp = win32.DispatchEx("Excel.Application")
+            exceltopng(baobiao, querydt, 'query_img.png', xlApp)
             queryimg = url_for('static', filename='img/' + current_user.username + '/query_img.png')
+            xlApp.Quit()
+            xlApp = None
+            pythoncom.CoUninitialize()
+            # pid = GetCurrentProcessId()
+            # handle = OpenProcess(PROCESS_ALL_ACCESS, True, pid)
+            # SetProcessWorkingSetSize(handle,-1,-1)
+            gc.collect()
             return render_template("query.html", baobiao=baobiao, queryimg=queryimg)
         except:
+            xlApp.Quit()
             flash('所选报表尚未生成')
     return redirect(url_for('baobiao.query'))
 

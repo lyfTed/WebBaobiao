@@ -36,7 +36,7 @@ class QueryForm(FlaskForm):
     excel = SelectField(u'报表名', validators=[DataRequired()], coerce=int, id='select_excel')
     querydate = SelectField(u'查询日期', coerce=str, id='select_query_date')
     customizeddate = DateField(u'或自选日期(IE用户请输入YYYY-MM-DD)', format='%Y-%m-%d')
-    submit = SubmitField(u'查询')
+    submit = SubmitField(u'查询(显示第一个Sheet)')
 
 
 
