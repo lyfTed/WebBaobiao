@@ -89,7 +89,6 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     FREQ_OF_FILE = get_baobiao_freq()
     conn.ping(reconnect=True)
     # 创建table
-    # 用第一行第一列做表名
     tablename_chinese = filename_chinese
     tablename = filename_english
     freq = FREQ_OF_FILE[tablename_chinese]

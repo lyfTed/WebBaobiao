@@ -12,9 +12,9 @@ from .form import BaobiaoForm, TianxieForm, QueryForm, PreviewForm
 from pypinyin import lazy_pinyin
 from openpyxl import load_workbook
 from openpyxl.styles import numbers
-from win32process import SetProcessWorkingSetSize
-from win32api import GetCurrentProcessId, OpenProcess
-from win32con import PROCESS_ALL_ACCESS
+# from win32process import SetProcessWorkingSetSize
+# from win32api import GetCurrentProcessId, OpenProcess
+# from win32con import PROCESS_ALL_ACCESS
 import win32com.client as win32
 from datetime import datetime, date, timedelta
 from .form import GenerateForm, excels
@@ -22,11 +22,17 @@ from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
 import gc
-import pyexcel
 from PIL import ImageGrab
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 pardir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+ALLOWED_EXTENSIONS = set(['xlsx'])
+
+
+# 用于判断文件后缀
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 
 # 获取数据库中报表名
@@ -327,12 +333,6 @@ def fill():
             try:
                 FILE_TO_SET = get_baobiao_name()
                 baobiao = FILE_TO_SET[str(previewform.excel.data)]
-                # excel 2 dataframe
-                # xd = pd.ExcelFile(filedir + '/' + baobiao + '.xlsx')
-                # pd.set_option('display.max_colwidth', 1000)
-                # df = xd.parse()
-                # with codecs.open(destdir + '/preview.html', 'w', encoding='utf-8') as html_file:
-                #     html_file.write(df.to_html(header=True, index=True, na_rep=''))
                 pythoncom.CoInitialize()
                 xlApp = win32.DispatchEx("Excel.Application")
                 exceltopng(baobiao, None, 'fill_img.png', xlApp)
@@ -349,7 +349,6 @@ def fill():
             except:
                 gc.collect()
                 xlApp.Quit()
-                # close_excel_by_force(xlApp)
                 xlApp = None
                 pythoncom.CoUninitialize()
                 flash('该报表模板尚未上传，请联系管理员上传')
@@ -387,6 +386,92 @@ def fill():
             return redirect('/baobiao/fill/')
         finally:
             return redirect('/baobiao/fill/')
+
+
+@_baobiao.route('/upload_data/', methods=['GET', 'POST'])
+@login_required
+def upload_data():
+    if request.method == 'GET':
+        return render_template("baobiao_uploaddata.html")
+    elif request.method == 'POST':
+        # get current auth
+        username = current_user.username
+        # check if the post request has the file part
+        filedir = os.path.join(pardir, 'Files', 'data')
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
+        if 'data' not in request.files:
+            flash('No data part')
+            return redirect(request.url)
+        file = request.files['data']
+        if file.filename == '':
+            flash('No file selected for uploading')
+            return redirect(request.url)
+        files = request.files.getlist("data")
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename_chinese = re.split('[_.]', file.filename)[0]
+                filename_english = ''.join(lazy_pinyin(filename_chinese))
+                filename = filename_chinese + '.xlsx'
+                file.save(os.path.join(filedir, filename))
+                update_db_data(os.path.join(filedir, filename), filename_chinese, filename_english)
+        flash('数据上传成功')
+        return redirect('/baobiao/upload_data')
+
+
+def update_db_data(file_to_generate, filename_chinese, filename_english):
+    FILE_TO_SET = get_baobiao_name()
+    FREQ_OF_FILE = get_baobiao_freq()
+    conn.ping(reconnect=True)
+    # 查询table
+    # 拿到数据excel表名
+    tablename_chinese = filename_chinese
+    tablename = filename_english
+    freq = FREQ_OF_FILE[tablename_chinese]
+    # 获取当前用户，及填写月份
+    username = current_user.username
+    lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
+    # lastm = lastmonthend.strftime(("%m"))
+    lastmonth = lastmonthend.strftime("_%Y_%m")
+    # 连上数据库
+    cursor = conn.cursor()
+    sql = 'select count(distinct sheetname, position) from ' + username + lastmonth + ' where baobiao="' + tablename + '";'
+    cursor.execute(sql)
+    sqlresult = cursor.fetchall()[0][0]
+    print(sqlresult)
+    # 先查出有几条是不重复的需要更新的数据，再去excel里找对应格子拿数
+
+    # wb = load_workbook(file_to_generate)
+    # sheet_names = wb.get_sheet_names()
+    # for sheet_name in sheet_names:
+    #     sheet_ranges = wb.get_sheet_by_name(sheet_name)
+    #     nrows = sheet_ranges.max_row
+    #     ncols = sheet_ranges.max_column
+    #     if nrows == 1 and ncols == 1:
+    #         continue
+    #     cols = [chr(i + ord('A')) for i in range(ncols)]
+    #     rows = [str(i + 1) for i in range(nrows)]
+    #     df = pd.DataFrame(sheet_ranges.values)
+    #     df = df.fillna("")
+    #     try:
+    #         for i in range(nrows):
+    #             for j in range(ncols):
+    #                 position = cols[j] + rows[i]
+    #                 content = str(df.iloc[i, j])
+    #                 editable = False
+    #                 if len(content) > 0 and content[0] == "|":
+    #                     editable = True
+    #                 sql = 'insert into ' + tablename + ' (tablename, sheetname, position, content, freq, editable) values ("' + \
+    #                       tablename_chinese + '","' + str(sheet_name) + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
+    #                 cursor.execute(sql)
+    #         conn.commit()
+    #     except:
+    #         print(sql)
+    #         print('Import Into Table Failure')
+    #     finally:
+    #         pass
+    conn.close()
+
 
 
 @_baobiao.route('/generate')
