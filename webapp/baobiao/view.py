@@ -431,16 +431,20 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
     tablename = filename_english
     freq = FREQ_OF_FILE[tablename_chinese]
     # 获取当前用户，及填写月份
-    username = current_user.username
+    username = current_user.username.lower()
+    print(username)
     lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
     # lastm = lastmonthend.strftime(("%m"))
     lastmonth = lastmonthend.strftime("_%Y_%m")
     # 连上数据库
     cursor = conn.cursor()
-    sql = 'select sheetname, position from ' + username + lastmonth + ' where baobiao="' + tablename + '" group by ' \
-           'sheetname, position having count(*)=1;'
+    sql = 'select sheetname, position from ' + username + lastmonth + ' where baobiao="' + tablename_chinese + \
+          '" group by sheetname, position having count(*)=1;'
+    print(sql)
     cursor.execute(sql)
+    conn.commit()
     sqlresult = cursor.fetchall()
+    print(sqlresult)
     # 先查出有几个格子里的填写内容是只需要一个数据的，再去excel里找对应格子拿数
     wb = load_workbook(file_to_generate)
     sheet_names = wb.get_sheet_names()
@@ -452,11 +456,11 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
             position_value = sheet_ranges[gezi].value
             submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
             sql = 'update ' + username + lastmonth + ' set value=' + str(position_value) + ', submit_time="' + \
-                  submit_time + '" where baobiao="' + tablename + '" and sheetname="' + sheetname + \
+                  submit_time + '" where baobiao="' + tablename_chinese + '" and sheetname="' + sheetname + \
                   '" and position="' + gezi + '";'
             print(sql)
             cursor.execute(sql)
-    conn.commit()
+            conn.commit()
     conn.close()
 
 
