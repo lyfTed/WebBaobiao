@@ -373,8 +373,6 @@ def fill():
                 sql = 'update ' + username + lastmonth + ' set value=' + value + ' where content="' + content + '";'
                 sql2 = 'update ' + username + lastmonth + ' set submit_time="' + submit_time + '" where content="' + content + '";'
                 if value != '':
-                    print(sql)
-                    print(sql2)
                     cursor.execute(sql)
                     cursor.execute(sql2)
             conn.commit()
@@ -397,7 +395,7 @@ def upload_data():
         # get current auth
         username = current_user.username
         # check if the post request has the file part
-        filedir = os.path.join(pardir, 'Files', 'data')
+        filedir = os.path.join(pardir, 'Files', 'data', username)
         if not os.path.exists(filedir):
             os.mkdir(filedir)
         if 'data' not in request.files:
@@ -414,8 +412,12 @@ def upload_data():
                 filename_english = ''.join(lazy_pinyin(filename_chinese))
                 filename = filename_chinese + '.xlsx'
                 file.save(os.path.join(filedir, filename))
-                update_db_data(os.path.join(filedir, filename), filename_chinese, filename_english)
-        flash('数据上传成功')
+                try:
+                    update_db_data(os.path.join(filedir, filename), filename_chinese, filename_english)
+                    os.remove(os.path.join(filedir, filename))
+                except:
+                    pass
+        flash('数据上传成功,请回到填写报表数据页面检查上传结果，若有问题，请检查上传的数据文件')
         return redirect('/baobiao/upload_data')
 
 
@@ -435,41 +437,26 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
     lastmonth = lastmonthend.strftime("_%Y_%m")
     # 连上数据库
     cursor = conn.cursor()
-    sql = 'select count(distinct sheetname, position) from ' + username + lastmonth + ' where baobiao="' + tablename + '";'
+    sql = 'select sheetname, position from ' + username + lastmonth + ' where baobiao="' + tablename + '" group by ' \
+           'sheetname, position having count(*)=1;'
     cursor.execute(sql)
-    sqlresult = cursor.fetchall()[0][0]
-    print(sqlresult)
-    # 先查出有几条是不重复的需要更新的数据，再去excel里找对应格子拿数
-
-    # wb = load_workbook(file_to_generate)
-    # sheet_names = wb.get_sheet_names()
-    # for sheet_name in sheet_names:
-    #     sheet_ranges = wb.get_sheet_by_name(sheet_name)
-    #     nrows = sheet_ranges.max_row
-    #     ncols = sheet_ranges.max_column
-    #     if nrows == 1 and ncols == 1:
-    #         continue
-    #     cols = [chr(i + ord('A')) for i in range(ncols)]
-    #     rows = [str(i + 1) for i in range(nrows)]
-    #     df = pd.DataFrame(sheet_ranges.values)
-    #     df = df.fillna("")
-    #     try:
-    #         for i in range(nrows):
-    #             for j in range(ncols):
-    #                 position = cols[j] + rows[i]
-    #                 content = str(df.iloc[i, j])
-    #                 editable = False
-    #                 if len(content) > 0 and content[0] == "|":
-    #                     editable = True
-    #                 sql = 'insert into ' + tablename + ' (tablename, sheetname, position, content, freq, editable) values ("' + \
-    #                       tablename_chinese + '","' + str(sheet_name) + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
-    #                 cursor.execute(sql)
-    #         conn.commit()
-    #     except:
-    #         print(sql)
-    #         print('Import Into Table Failure')
-    #     finally:
-    #         pass
+    sqlresult = cursor.fetchall()
+    # 先查出有几个格子里的填写内容是只需要一个数据的，再去excel里找对应格子拿数
+    wb = load_workbook(file_to_generate)
+    sheet_names = wb.get_sheet_names()
+    for sheetposition in sqlresult:
+        sheetname = sheetposition[0]
+        gezi = sheetposition[1]
+        if sheetname in sheet_names:
+            sheet_ranges = wb.get_sheet_by_name(sheetname)
+            position_value = sheet_ranges[gezi].value
+            submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
+            sql = 'update ' + username + lastmonth + ' set value=' + str(position_value) + ', submit_time="' + \
+                  submit_time + '" where baobiao="' + tablename + '" and sheetname="' + sheetname + \
+                  '" and position="' + gezi + '";'
+            print(sql)
+            cursor.execute(sql)
+    conn.commit()
     conn.close()
 
 
