@@ -68,7 +68,7 @@ def get_baobiao_auditor():
     return AUDITOR_OF_FILE
 
 
-@_baobiao.route('/split/')
+@_baobiao.route('/split/', methods=['GET', 'POST'])
 @login_required
 def split():
     FILE_TO_SET = get_baobiao_name()
@@ -195,10 +195,16 @@ def exceltopng(baobiao, querydt, output, xlApp):
     xlApp.Visible = False
     xlBitmap = 2
     if querydt is not None:
-        wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
+        excelfile = baobiao + '_' + querydt.replace('/', '_') + '.xlsx'
+        exceldir = os.path.join(filedir, excelfile)
+        wb = xlApp.Workbooks.Open(exceldir)
+        # wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
     else:
         wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '.xlsx')
+    # print(wb)
+    # print(exceldir)
     ws = wb.Worksheets[1]
+    # print(ws)
     ws.UsedRange.CopyPicture(Format=xlBitmap)
     img = ImageGrab.grabclipboard()
     img.save(destdir + '/' + output)
@@ -468,7 +474,7 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
     conn.close()
 
 
-@_baobiao.route('/generate')
+@_baobiao.route('/generate/', methods=['GET', 'POST'])
 @login_required
 def generate():
     form = GenerateForm()
@@ -708,10 +714,6 @@ def query():
             xlApp.Quit()
             xlApp = None
             pythoncom.CoUninitialize()
-            # pid = GetCurrentProcessId()
-            # handle = OpenProcess(PROCESS_ALL_ACCESS, True, pid)
-            # SetProcessWorkingSetSize(handle,-1,-1)
-            gc.collect()
             return render_template("query.html", baobiao=baobiao, queryimg=queryimg)
         except:
             xlApp.Quit()
@@ -738,7 +740,7 @@ def cal_former_month(dt, N, freq):
     return(dtlist)
 
 
-@_baobiao.route('/_get_freq/')
+@_baobiao.route('/_get_freq/', methods=['GET', 'POST'])
 def _get_freq():
     FILE_TO_SET = get_baobiao_name()
     FREQ_OF_FILE = get_baobiao_freq()
