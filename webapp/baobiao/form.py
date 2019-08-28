@@ -11,7 +11,7 @@ from .. import excels
 
 
 class BaobiaoForm(FlaskForm):
-    excels = SelectMultipleField(u'拆分报表（多选）', validators=[DataRequired()], coerce=int)
+    excels = SelectMultipleField(u'拆分报表（多选）', validators=[DataRequired()], coerce=int, id='split')
     submit = SubmitField(u'拆分')
 
 
@@ -27,7 +27,7 @@ class PreviewForm(FlaskForm):
 
 
 class GenerateForm(FlaskForm):
-    excels = SelectMultipleField(u'生成报表（可多选）', validators=[DataRequired()], coerce=int)
+    excels = SelectMultipleField(u'生成报表（可多选）', validators=[DataRequired()], coerce=int, id='generate')
     submit = SubmitField(u'生成')
 
 

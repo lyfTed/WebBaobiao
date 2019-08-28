@@ -257,7 +257,8 @@ def fill():
             except:
                 pass
             # 不考虑不同报表和格子位置，只要填写内容即只展现一次
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq="M" group by content;'
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq="M" group by content' \
+                  ' order by baobiao asc, sheetname asc, position asc;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["03", "09"]:
@@ -282,7 +283,8 @@ def fill():
                 conn.commit()
             except:
                 pass
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq in ("M", "Q") group by content;'
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + \
+                  ' where freq in ("M", "Q") group by content order by baobiao asc, sheetname asc, position asc;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["06", "12"]:
@@ -316,7 +318,8 @@ def fill():
                 conn.commit()
             except:
                 pass
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' group by content;'
+            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' group by content order by ' \
+                  'baobiao asc, sheetname asc, position asc;'
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
     except:
@@ -465,7 +468,6 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
     conn.close()
 
 
-
 @_baobiao.route('/generate')
 @login_required
 def generate():
@@ -533,6 +535,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     cursor = conn.cursor()
     filetogenerate = ''.join(lazy_pinyin(filetogenerate_chinese))
     tablenamenew = filetogenerate + '_' + generatedate
+    print(filetogenerate)
     print(tablenamenew)
     userlist = []
     # 获取上个月日期
@@ -542,13 +545,15 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     sql = 'drop table if exists ' + tablenamenew
     cursor.execute(sql)
     sql = 'create table ' + tablenamenew + '(tablename VARCHAR(100), sheetname VARCHAR(100), position VARCHAR(100), ' \
-        'content VARCHAR(100), editable Boolean, content_formula VARCHAR(500), content_list VARCHAR(500),' \
+        'content VARCHAR(500), editable Boolean, content_formula VARCHAR(500), content_list VARCHAR(500),' \
         ' primary key (sheetname, position));'
+    print(sql)
     cursor.execute(sql)
     conn.commit()
     try:
         sql = 'insert into ' + tablenamenew + ' (tablename, sheetname, position, content, editable, content_formula, content_list) ' \
               'select tablename, sheetname, position, content, editable, content, content_list from ' + filetogenerate + ';'
+        print(sql)
         cursor.execute(sql)
         conn.commit()
     except:

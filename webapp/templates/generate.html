@@ -8,9 +8,14 @@
     <h1>生成报表</h1>
     <h4>在此可以生成作为对应报表复核员所管理的报表</h4>
 </div>
-<form class="col-md-4">
+<div class="col-md-4">
+    <style type="text/css">
+        #generate {
+            height: 500px;
+        }
+    </style>
     {{ wtf.quick_form(form) }}
-</form>
+</div>
 {% endblock %}
 
 {% block scripts %}
