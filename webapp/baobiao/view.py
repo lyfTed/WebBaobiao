@@ -416,6 +416,7 @@ def upload_data():
                     update_db_data(os.path.join(filedir, filename), filename_chinese, filename_english)
                     os.remove(os.path.join(filedir, filename))
                 except:
+                    flash('上传数据表中有错，上传失败')
                     pass
         flash('数据上传成功,请回到填写报表数据页面检查上传结果，若有问题，请检查上传的数据文件')
         return redirect('/baobiao/upload_data')
@@ -432,33 +433,33 @@ def update_db_data(file_to_generate, filename_chinese, filename_english):
     freq = FREQ_OF_FILE[tablename_chinese]
     # 获取当前用户，及填写月份
     username = current_user.username.lower()
-    print(username)
     lastmonthend = date(date.today().year, date.today().month, 1) - timedelta(days=1)
     # lastm = lastmonthend.strftime(("%m"))
     lastmonth = lastmonthend.strftime("_%Y_%m")
     # 连上数据库
     cursor = conn.cursor()
-    sql = 'select sheetname, position from ' + username + lastmonth + ' where baobiao="' + tablename_chinese + \
-          '" group by sheetname, position having count(*)=1;'
-    print(sql)
+    sql = 'select sheetname, position from ' + username + lastmonth + ' where baobiao="' + tablename_chinese + '" group by ' \
+           'sheetname, position having count(*)=1;'
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
-    print(sqlresult)
     # 先查出有几个格子里的填写内容是只需要一个数据的，再去excel里找对应格子拿数
-    wb = load_workbook(file_to_generate)
+    wb = load_workbook(file_to_generate, data_only=True)
     sheet_names = wb.get_sheet_names()
     for sheetposition in sqlresult:
         sheetname = sheetposition[0]
         gezi = sheetposition[1]
         if sheetname in sheet_names:
             sheet_ranges = wb.get_sheet_by_name(sheetname)
-            position_value = sheet_ranges[gezi].value
+            if pd.isnull(sheet_ranges[gezi].value):
+                position_value = 0
+            else:
+                position_value = round(sheet_ranges[gezi].value, 2)
             submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
             sql = 'update ' + username + lastmonth + ' set value=' + str(position_value) + ', submit_time="' + \
                   submit_time + '" where baobiao="' + tablename_chinese + '" and sheetname="' + sheetname + \
                   '" and position="' + gezi + '";'
-            print(sql)
+            # print(sql)
             cursor.execute(sql)
             conn.commit()
     conn.close()
