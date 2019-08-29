@@ -525,7 +525,7 @@ def generate():
         if allcomplete and len(generate_fail_list) == 0:
             flash('所选报表均生成成功')
         elif allcomplete and len(generate_fail_list) != len(generatelist):
-            flash('除生成失败的报表外，其他所选报表生成成功')
+            flash('其他所选报表生成成功')
         else:
             flash('除生成失败的报表外，其他报表生成成功，但有用户尚未完成填写，生成的报表数据还未完整，已删除')
         conn.close()
