@@ -200,10 +200,11 @@ def exceltopng(baobiao, querydt, output, xlApp):
         wb = xlApp.Workbooks.Open(exceldir)
         # wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '_' + querydt.replace('/', '_') + '.xlsx')
     else:
-        excelfile = baobiao + '.xlsx'
-        exceldir = os.path.join(filedir, excelfile)
-        wb = xlApp.Workbooks.Open(exceldir)
+        wb = xlApp.Workbooks.Open(filedir + '/' + baobiao + '.xlsx')
+    # print(wb)
+    # print(exceldir)
     ws = wb.Worksheets[1]
+    # print(ws)
     ws.UsedRange.CopyPicture(Format=xlBitmap)
     img = ImageGrab.grabclipboard()
     img.save(destdir + '/' + output)
@@ -599,7 +600,6 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
                 value = cursor.fetchone()[0]
                 uservalue_list.append(value)
             except err.DatabaseError:
-                print("DatabaseError")
                 value = None
                 uservalue_list.append(value)
             else:
@@ -615,6 +615,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
                 formula = formula.replace(content, str(value))
         formula = formula.replace("（", "(")
         formula = formula.replace("）", ")")
+        # print(formula)
         try:
             positionresult = round(eval(formula.lstrip("|")), 2)
         except:
@@ -628,7 +629,6 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
     # 计算行数列数
     wb = load_workbook(pardir + '/Files/upload/' + filetogenerate_chinese + '.xlsx')
     sheet_names = wb.get_sheet_names()
-    print(sheet_names)
     for sheet_name in sheet_names:
         sh = wb.get_sheet_by_name(sheet_name)
         nrows = sh.max_row
@@ -648,7 +648,7 @@ def generateFile(filetogenerate_chinese, generatedate, xlApp):
                 sh[x[0]] = x[1]
         # 把带公式计算的格子填入公式，自动计算
         sql = 'select distinct position, content from ' + filetogenerate + ' where content like "=%" ' + \
-              'and sheetname="' + str(sheet_name) + '";'
+              'and sheetname="' + str(sheet_name) + '";'        
         cursor.execute(sql)
         conn.commit()
         sqlresult = cursor.fetchall()
