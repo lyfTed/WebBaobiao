@@ -80,7 +80,9 @@ def upload_file():
                 filename = filename_chinese + '.xlsx'
                 file.save(os.path.join(filedir, filename))
                 importintodb(os.path.join(filedir, filename), filename_chinese, filename_english)
-        flash('模板上传成功')
+            else:
+                flash('仅支持xlsx文件，此模板上传失败：'+filename_chinese)
+        flash('除去上面弹出报错的模板外，若有上传其他模板，则其他模板上传成功')
         return redirect('/api/upload')
 
 
@@ -91,7 +93,10 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     # 创建table
     tablename_chinese = filename_chinese
     tablename = filename_english
-    freq = FREQ_OF_FILE[tablename_chinese]
+    try:
+        freq = FREQ_OF_FILE[tablename_chinese]
+    except:
+        flash('未在报表名管理中维护此报表，上传此模板失败：' + filename_chinese)
     sql = 'drop table if exists ' + tablename
     cursor = conn.cursor()
     cursor.execute(sql)
