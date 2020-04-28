@@ -95,9 +95,9 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
     sql = 'drop table if exists ' + tablename
     cursor = conn.cursor()
     cursor.execute(sql)
-    sql = 'create table ' + tablename + \
-          '(tablename VARCHAR(100), sheetname VARCHAR(100), position VARCHAR(100), content VARCHAR(500), content_list VARCHAR(500),' \
-          ' freq VARCHAR(10), editable Boolean, primary key (sheetname, position));'
+    sql = """create table {} (tablename VARCHAR(100), sheetname VARCHAR(100), position VARCHAR(100), 
+            content VARCHAR(500), content_list VARCHAR(500), freq VARCHAR(10), editable Boolean, 
+            primary key (sheetname, position));""".format(tablename)
     cursor.execute(sql)
 
     wb = load_workbook(file_to_generate)
@@ -120,8 +120,11 @@ def importintodb(file_to_generate, filename_chinese, filename_english):
                     editable = False
                     if len(content) > 0 and content[0] == "|":
                         editable = True
-                    sql = 'insert into ' + tablename + ' (tablename, sheetname, position, content, freq, editable) values ("' + \
-                          tablename_chinese + '","' + str(sheet_name) + '","' + position + '", "' + str(content) + '", "' + str(freq) + '", ' + str(editable) + ");"
+                    sql = """insert into {tablename} (tablename, sheetname, position, content, freq, editable) values 
+                          ("{tablename_chinese}", "{sheet_name}", "{position}", "{content}", "{freq}", {editable});
+                          """.format(tablename=tablename, tablename_chinese=tablename_chinese, sheet_name=str(sheet_name),
+                                     position=position, content=str(content), freq=str(freq), editable=str(editable))
+                    # print(sql)
                     cursor.execute(sql)
             conn.commit()
         except:

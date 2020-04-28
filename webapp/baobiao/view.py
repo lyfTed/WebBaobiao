@@ -22,6 +22,7 @@ from .. import conn
 from ..models import BaobiaoToSet
 import pythoncom
 import gc
+import time
 from PIL import ImageGrab
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -104,7 +105,7 @@ def baobiao_split(cursor, file):
     filetoset_chinese = FILE_TO_SET[file]
     filetoset = ''.join(lazy_pinyin(FILE_TO_SET[file])).lower()
     freq = FREQ_OF_FILE[filetoset_chinese]
-    sql = 'select distinct position, content, sheetname from ' + filetoset + ' where editable=True;'
+    sql = 'select distinct position, content, sheetname from {} where editable=True;'.format(filetoset)
     cursor.execute(sql)
     conn.commit()
     sqlresult = cursor.fetchall()
@@ -122,8 +123,10 @@ def baobiao_split(cursor, file):
         content_list = [s for s in content_list if s != '']
         # 存储分割后的数据进报表表
         content_store = ';'.join(content_list)
-        sql = 'update ' + filetoset + ' set content_list="' + str(content_store) + '" where position="' + str(position) \
-              + '" and sheetname="' + str(sheetname) + '";'
+        sql = """update {filetoset} set content_list="{content_store}" 
+                where position="{position}" and sheetname= "{sheetname}";
+                """.format(filetoset=filetoset, content_store=content_store, position=position, sheetname=sheetname)
+        # print(sql)
         cursor.execute(sql)
         conn.commit()
         # 拆分到用户表
@@ -139,14 +142,15 @@ def baobiao_split(cursor, file):
                 userset[user] = []
             userset[user].append((position, value, sheetname))
     for user in userlist:
-        sql = 'create table if not exists ' + user + '(baobiao VARCHAR(100), sheetname VARCHAR(100), ' \
-                'position VARCHAR(100), content VARCHAR(500), value_last Double, value DOUBLE, ' \
-                'submit_time VARCHAR(20), freq VARCHAR(5), content_concerned VARCHAR(500));'
+        sql = """create table if not exists {}(baobiao VARCHAR(100), sheetname VARCHAR(100),
+                    position VARCHAR(100), content VARCHAR(500), value_last Double, value DOUBLE,
+                    submit_time VARCHAR(20), freq VARCHAR(5), content_concerned VARCHAR(500));
+                """.format(user)
         cursor.execute(sql)
-        sql = 'delete from ' + user + ' where baobiao="' + filetoset_chinese + '";'
+        sql = 'delete from {} where baobiao="{}";'.format(user, filetoset_chinese)
         cursor.execute(sql)
         try:
-            sql = 'delete from ' + user + lastmonth + ' where baobiao="' + filetoset_chinese + '";'
+            sql = 'delete from {} where baobiao="{}";'.format(user+lastmonth, filetoset_chinese)
             cursor.execute(sql)
         except:
             pass
@@ -157,26 +161,39 @@ def baobiao_split(cursor, file):
             sheetname = userset[user][i][2]
             sql = 'insert into ' + user + ' (baobiao, sheetname, position, content, freq) values ("' + filetoset_chinese\
                   + '", "' + str(sheetname) + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+            print(sql)
+            sql = """insert into {user} (baobiao, sheetname, position, content, freq)
+                        values ("{filetoset_chinese}", "{sheetname}","{position}","{value}","{freq}");
+                    """.format(user=user,filetoset_chinese=filetoset_chinese, sheetname=str(sheetname),
+                               position=str(position), value=str(value), freq=str(freq))
+            print(sql)
             cursor.execute(sql)
             try:
                 sql = 'insert into ' + user + lastmonth + ' (baobiao, sheetname, position, content, freq) values ("' + \
                       filetoset_chinese + '", "' + str(sheetname) + '", "' + str(position) + '", "' + str(value) + '", "' + str(freq) + '");'
+                sql = """insert into {user_lastmonth} (baobiao, sheetname, position, content, freq)
+                        values ("{filetoset_chinese}", "{sheetname}","{position}","{value}","{freq}");
+                        """.format(user_lastmonth=user+lastmonth, filetoset_chinese=filetoset_chinese,
+                                   sheetname=str(sheetname),position=str(position), value=str(value), freq=str(freq))
+                print(sql)
                 cursor.execute(sql)
             except:
                 pass
-        sql = 'select distinct content from ' + user + ';'
+        sql = 'select distinct content from {};'.format(user)
         cursor.execute(sql)
         distinct_content_list = [x[0] for x in cursor.fetchall()]
         for distinct_content in distinct_content_list:
-            sql = 'select distinct baobiao, sheetname, position from ' + user + ' where content="' + str(distinct_content) +'";'
+            sql = """select distinct baobiao, sheetname, position from {} where content="{}";
+                    """.format(user, str(distinct_content))
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
             rs = '、'.join(['-'.join(x) for x in sqlresult])
-            sql = 'update ' + user + ' set content_concerned="' + rs + '" where content="' + distinct_content + '";'
+            sql = """update {0} set content_concerned="{1}" where content="{2}";""".format(user, rs, distinct_content)
             print(sql)
             cursor.execute(sql)
             try:
-                sql = 'update ' + user + lastmonth + ' set content_concerned="' + rs + '" where content="' + distinct_content + '";'
+                sql = """update {} set content_concerned="{}" where content="{}";
+                        """.format(user+lastmonth, rs, distinct_content)
                 cursor.execute(sql)
             except:
                 pass
@@ -249,33 +266,34 @@ def fill():
     lastmonth = lastmonthend.strftime("_%Y_%m")
     try:
         if lastm in ["01", "02", "04", "05", "07", "08", "10", "11"]:
-            sql = 'create table if not exists ' + username + lastmonth + \
-                  ' select distinct * from ' + username + ' where freq="M";'
+            sql = """create table if not exists {} select distinct * from {} 
+                    where freq="M";""".format(username+lastmonth, username)
             cursor.execute(sql)
             try:
                 # 上一期， Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and ' \
-                        'content=s.content and freq="M");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                        and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                        and t0.freq='M';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
                 pass
             # 不考虑不同报表和格子位置，只要填写内容即只展现一次
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' where freq="M" group by content' \
-                  ' order by baobiao asc, sheetname asc, position asc;'
+            sql = """select *, count(distinct content) from {} where freq="M" group by content
+                    order by baobiao asc, sheetname asc, position asc;""".format(username+lastmonth)
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["03", "09"]:
-            sql = 'create table if not exists ' + username + lastmonth + \
-                  ' select distinct * from ' + username + ' where freq in ("M", "Q");'
+            sql = """create table if not exists {} select distinct * from {} 
+                    where freq in ("M", "Q");""".format(username + lastmonth, username)
             cursor.execute(sql)
             try:
                 # 上一期, Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="M");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                          and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                          and t0.freq='M';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -283,25 +301,26 @@ def fill():
             try:
                 # 上一期, Quarterly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="Q");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                          and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                          and t0.freq='Q';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
                 pass
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + \
-                  ' where freq in ("M", "Q") group by content order by baobiao asc, sheetname asc, position asc;'
+            sql = """select *, count(distinct content) from {} where freq in ("M", "Q") group by content
+                    order by baobiao asc, sheetname asc, position asc;""".format(username+lastmonth)
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
         elif lastm in ["06", "12"]:
-            sql = 'create table if not exists ' + username + lastmonth + \
-                  ' select distinct * from ' + username + ';'
+            sql = """create table if not exists {} select distinct * from {};""".format(username + lastmonth, username)
             cursor.execute(sql)
             try:
                 # 上一期, Monthly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=1)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="M");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                                        and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                                        and t0.freq='M';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -309,8 +328,9 @@ def fill():
             try:
                 # 上一期, Quarterly
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=63)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="Q");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                                        and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                                        and t0.freq='Q';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
@@ -318,14 +338,15 @@ def fill():
             try:
                 # 上一期, Half year
                 lastterm = (date(lastmonthend.year, lastmonthend.month, 1) - timedelta(days=153)).strftime("_%Y_%m")
-                sql = 'update ' + username + lastmonth + ' s set s.value_last = (select value from ' + username + lastterm \
-                      + ' where baobiao=s.baobiao and sheetname=s.sheetname and position=s.position and content=s.content and freq="H");'
+                sql = """update {0} t0, {1} t1 set t0.value_last=t1.value where t0.baobiao=t1.baobiao 
+                                        and t0.sheetname=t1.sheetname and t0.position=t1.position and t0.content=t1.content 
+                                        and t0.freq='H';""".format(username + lastmonth, username + lastterm)
                 cursor.execute(sql)
                 conn.commit()
             except:
                 pass
-            sql = 'select *, count(distinct content) from ' + username + lastmonth + ' group by content order by ' \
-                  'baobiao asc, sheetname asc, position asc;'
+            sql = """select *, count(distinct content) from {} group by content
+                    order by baobiao asc, sheetname asc, position asc;""".format(username+lastmonth)
             cursor.execute(sql)
             sqlresult = cursor.fetchall()
     except:
@@ -379,8 +400,8 @@ def fill():
                 content = sqlresult[i][3]
                 value = str(tianxie[i])
                 submit_time = datetime.today().strftime('%y/%m/%d %H:%M')
-                sql = 'update ' + username + lastmonth + ' set value=' + value + ' where content="' + content + '";'
-                sql2 = 'update ' + username + lastmonth + ' set submit_time="' + submit_time + '" where content="' + content + '";'
+                sql = 'update {} set value={} where content="{}";'.format(username+lastmonth, value, content)
+                sql2 = 'update {} set submit_time="{}" where content="{}";'.format(username+lastmonth, submit_time, content)
                 if value != '':
                     cursor.execute(sql)
                     cursor.execute(sql2)
